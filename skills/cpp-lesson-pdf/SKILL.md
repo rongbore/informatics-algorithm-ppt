@@ -30,3 +30,17 @@ Ask for the topic, knowledge points, full problem statements, sample I/O, constr
 
 ## Validation
 Run PDF info check, visually render all pages, inspect compilation warnings, and test the C++ reference solution with samples when possible. A successful PDF compilation alone does not prove layout fidelity or algorithm correctness.
+
+
+## Mandatory core comments in solution code
+Every complete C++ solution printed in a lesson PDF MUST include concise, accurate Chinese core comments, not merely an explanation outside the code.
+- Explain the meaning of non-obvious key variables, DP states, and data structures.
+- Explain important initialization choices and their relation to the problem.
+- Place comments adjacent to core transitions, algorithm decisions, loops, and data-structure updates; explain **why** the step is necessary.
+- Annotate significant boundary cases, unreachable states, overflow/modulo handling, and path reconstruction when applicable.
+- Explain what the final answer represents near the output.
+- Avoid mechanical line-by-line narration and excessive comments on obvious syntax; typically 5–12 meaningful comments for a medium-length solution, adjusted to complexity.
+- Comments must match the implemented algorithm exactly. Preserve the user's algorithm and variable names unless fixing a disclosed error.
+- Use Chinese UTF-8 source comments and verify that the PDF listing renders them without missing glyphs or broken spacing.
+- If using LaTeX listings, configure a Unicode-compatible code renderer or appropriate CJK handling; if it cannot display Chinese comments reliably, switch the rendering approach rather than silently deleting comments.
+- Before delivery, inspect the rendered PDF and verify that **each** exercise's full reference solution contains visible Chinese core comments.
