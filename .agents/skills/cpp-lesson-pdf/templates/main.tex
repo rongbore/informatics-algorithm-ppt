@@ -1,117 +1,79 @@
-\documentclass[UTF8,10.9pt]{ctexart}
+\documentclass[UTF8,11pt]{ctexart}
 \usepackage{lesson-style}
 \input{diagram-styles.tex}
 \begin{document}
-\LessonTitle{拓扑排序}{有向图的先后关系、队列实现与课堂练习}
+\LessonTitle{拓扑排序}{有向图的先后关系、队列实现与课堂练习 · 模板样张}
 \section{一、知识点讲解}
 \subsection{1. 什么是拓扑排序？}
-很多事情都有先后顺序：先学习基础课程，才能学习提高课程。把每件事情看作顶点，把“$u$ 必须先于 $v$”画成有向边 $u\to v$。拓扑排序要求每条有向边的起点都排在终点前面。
-\begin{lessonhint}
-\textbf{拓扑排序必须满足的规则}\par
-如果存在 $u\to v$，则输出序列中 $u$ 必须出现在 $v$ 前面。合法序列不一定唯一。
-\end{lessonhint}
+先完成前置任务，才能开始后续任务。把每个任务看作一个顶点，把“必须先完成 $u$ 才能完成 $v$”画成有向边 $u\to v$。拓扑排序要求每条边的起点都排在终点之前。
+\begin{lessonblue}{拓扑排序必须满足的规则}
+如果存在一条 $u\to v$，则 $u$ 必须在 $v$ 前面；但没有依赖关系的顶点可以交换顺序。
+\end{lessonblue}
 \begin{center}
-\begin{tikzpicture}[node distance=15mm and 25mm]
+\begin{tikzpicture}[node distance=13mm and 22mm]
 \node[lessonnode] (a) {1};
-\node[lessonnode,right=of a,yshift=10mm] (b) {2};
-\node[lessonnode,right=of a,yshift=-10mm] (c) {3};
-\node[lessonnode,right=of b,yshift=-10mm] (d) {4};
+\node[lessonnode,right=of a,yshift=11mm] (b) {2};
+\node[lessonnode,right=of a,yshift=-11mm] (c) {3};
+\node[lessonnode,right=of b,yshift=-11mm] (d) {4};
 \draw[lessonedge] (a)--(b);
 \draw[lessonedge] (a)--(c);
 \draw[lessonedge] (b)--(d);
 \draw[lessonedge] (c)--(d);
+\node[lessonnote,right=15mm of d] {1 必须在 2、3 之前\\2、3 必须在 4 之前};
 \end{tikzpicture}
 \end{center}
-\noindent 合法顺序包括 $1,2,3,4$ 和 $1,3,2,4$。
-\subsection{2. 入度、出度与 DAG}
+\noindent 合法序列有 $1,2,3,4$ 和 $1,3,2,4$，因为 2 和 3 之间没有先后要求。
+\subsection{2. 入度与队列}
 \begin{center}
-\begin{tabularx}{.96\linewidth}{@{}lX@{}}\toprule
-概念 & 含义\\\midrule
-入度 $indeg[v]$ & 指向顶点 $v$ 的有向边数量\\
-出度 & 从顶点出发的有向边数量\\
-入度为 0 & 没有尚未处理的前置要求\\
-DAG & 不包含有向环的有向图\\\bottomrule
+\begin{tabularx}{.95\linewidth}{@{}lX@{}}\toprule
+术语 & 含义\\\midrule
+入度 $indeg[v]$ & 当前还剩多少条指向 $v$ 的限制\\
+入度为零 & 该顶点已满足全部先行条件，可以入队\\
+有向无环图 & 不包含顺着箭头方向走回原点的环\\\bottomrule
 \end{tabularx}
 \end{center}
-\subsection{3. Kahn 算法：队列实现}
-\begin{enumerate}
-\item 统计每个顶点的入度，并建立邻接表。
-\item 把所有入度为 0 的顶点放入队列。
-\item 取出队首顶点 $u$，加入答案。
-\item 对每条边 $u\to v$，执行 $indeg[v]--$；若变为 0，则让 $v$ 入队。
-\item 队列为空后，若处理数量少于 $n$，则图中存在有向环。
-\end{enumerate}
-\LessonLabel{核心代码：队列与入度更新}
-\begin{lstlisting}[style=lessonfragment]
-while (!q.empty()) {
-    int u = q.front();
-    q.pop();
-    ans.push_back(u);
-    for (int v : g[u]) {
-        indeg[v]--;
-        if (indeg[v] == 0) q.push(v);
-    }
-}
-\end{lstlisting}
+\begin{lessonteal}{为什么删除出边时要减少入度？}
+因为任务 $u$ 已处理完，依赖 $u$ 的顶点 $v$ 少了一项前置要求。使用 $indeg[v]--$ 就能模拟删除 $u\to v$，无需真的删掉邻接表中的边。
+\end{lessonteal}
+\LessonLabel{队列过程：把四个顶点模拟一遍}
+\begin{center}
+\begin{tabularx}{.98\linewidth}{@{}lXX@{}}\toprule
+步骤 & 本次变化 & 操作后队列\\\midrule
+初始 & 1 的入度为零 & [1]\\
+处理 1 & 2、3 入度变为零 & [2,3]\\
+处理 2 & 4 的入度从 2 降为 1 & [3]\\
+处理 3 & 4 的入度变为零 & [4]\\
+处理 4 & 没有后续节点 & 空\\\bottomrule
+\end{tabularx}
+\end{center}
 \section{二、课堂练习}
-\subsection{1. 示例：任务先后顺序}
-\noindent 题目 ID：示例题\qquad 时间限制：1000 ms\qquad 空间限制：256 MB
-\LessonLabel{题目描述}
-给定 $n$ 个任务和 $m$ 条依赖关系 $u\to v$，输出任意一种合法任务执行顺序。保证存在合法答案。
+\subsection{1. 依赖任务排序（示例）}
+\LessonMeta{题目：示例题\quad 时间限制：未指定\quad 空间限制：未指定}
+\LessonLabel{题目内容}
+输入一个有向图，输出一个满足所有先后关系的顶点序列。如果有向图存在环，输出 $-1$。这里的示例仅用于演示模板与代码注释排版，并非原参考 PDF 的完整题面。
 \LessonLabel{输入格式}
-第一行两个整数 $n,m$；接下来 $m$ 行，每行两个整数 $u,v$。
+第一行 $n,m$；随后 $m$ 行，每行两个整数 $u,v$，表示 $u$ 必须先于 $v$。\par
 \LessonLabel{输出格式}
-输出一个合法拓扑序。
-\LessonLabel{样例 1}
-\begin{center}\begin{tabularx}{.9\linewidth}{XX}\toprule 输入 & 输出\\\midrule
-\texttt{4 4} & \texttt{1 2 3 4}\\
-\texttt{1 2} & \\
-\texttt{1 3} & \\
-\texttt{2 4} & \\
-\texttt{3 4} & \\\bottomrule\end{tabularx}\end{center}
-\LessonLabel{题意概括}
-任务是顶点，依赖关系是有向边；输出所有顶点的一种拓扑序。
-\LessonLabel{思路分析}
-第一步：建图并统计入度。第二步：把入度为 0 的任务入队。第三步：反复取出任务，并减少后继任务的剩余入度。
-\LessonLabel{样例推导分析过程}
-\begin{center}\begin{tabularx}{.95\linewidth}{lXX}\toprule 步骤 & 当前处理 & 处理后的队列\\\midrule
-初始 & — & [1]\\
-1 & 1 & [2,3]\\
-2 & 2 & [3]\\
-3 & 3 & [4]\\
-4 & 4 & 空\\\bottomrule\end{tabularx}\end{center}
+输出一个合法拓扑序或 $-1$。
+\LessonLabel{样例}
+\LessonInputOutputStart
+\begin{lessoninput}
+{\ttfamily\small\noindent 4 4\par 1 2\par 1 3\par 2 4\par 3 4\par}
+\end{lessoninput}
+\begin{lessonoutput}
+{\ttfamily\small\noindent 1 2 3 4\par}
+\end{lessonoutput}
+\LessonInputOutputEnd
+\LessonLabel{题意分析与推导}
+第一步：统计每个顶点的入度。第二步：把所有入度为零的顶点放入队列。第三步：每处理一个顶点，就减去它对后继顶点的先后限制。
+\begin{lessonorange}{样例推导分析过程}
+初始队列 $[1]$。处理 1 后，2 和 3 可以执行；处理 2 时，4 仍依赖 3；处理 3 后，4 才能进入队列。
+\end{lessonorange}
+\begin{lessonred}{特别注意}
+若遍历结束后输出的顶点数小于 $n$，说明图中仍存在无法解除的循环依赖，不能把已输出的部分序列当成完整答案。
+\end{lessonred}
 \LessonLabel{复杂度分析}
-时间复杂度 $O(n+m)$；空间复杂度 $O(n+m)$。
-\LessonLabel{AC 代码（示例实现，未连接在线评测）}
-\begin{lstlisting}
-#include <bits/stdc++.h>
-using namespace std;
-int main() {
-    ios::sync_with_stdio(false);
-    cin.tie(nullptr);
-    int n, m;
-    cin >> n >> m;
-    vector<vector<int>> g(n + 1);
-    vector<int> indeg(n + 1, 0);
-    for (int i = 0; i < m; i++) {
-        int u, v;
-        cin >> u >> v;
-        g[u].push_back(v);
-        indeg[v]++;
-    }
-    queue<int> q;
-    for (int i = 1; i <= n; i++)
-        if (indeg[i] == 0) q.push(i);
-    while (!q.empty()) {
-        int u = q.front(); q.pop();
-        cout << u << ' ';
-        for (int v : g[u]) {
-            indeg[v]--;
-            if (indeg[v] == 0) q.push(v);
-        }
-    }
-    cout << '\n';
-    return 0;
-}
-\end{lstlisting}
+每个顶点仅入队、出队一次，每条边仅遍历一次，时间和空间复杂度均为 $O(n+m)$。
+\LessonLabel{完整 C++ 题解代码（中文核心注释）}
+\LessonCodeFile{../examples/code/toposort_demo.cpp}
 \end{document}
