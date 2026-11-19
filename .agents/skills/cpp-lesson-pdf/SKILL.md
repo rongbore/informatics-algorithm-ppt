@@ -1,32 +1,58 @@
 ---
 name: cpp-lesson-pdf
-description: Generate Chinese C++ competitive programming lesson handouts as A4 PDF using the reference topology-sorting handout's XeLaTeX typography, color palette, code highlighting, diagrams and lesson/problem structure.
+description: 依据课堂讲义和练习题 PDF，生成与《拓扑排序课堂讲义》版式一致的中文 C++ 信息学课堂、课后作业详解 PDF；包含原题保真、逐步推导、矢量算法图、每题完整 C++ 解题代码、中文核心注释与代码编辑器语法高亮，并执行 XeLaTeX 编译及逐页质检。
 ---
 
-# C++ Lesson PDF Skill
+# cpp-lesson-pdf · Reference-calibrated v1.2
 
-## Trigger
-Use for Chinese C++ lesson handouts, algorithm explanations, classroom exercises, and homework PDFs when the user requests this template style.
+## 何时启用
 
-## Inputs
-Ask for the topic, knowledge points, full problem statements, sample I/O, constraints and optional reference code. If a source PDF is provided, inspect all relevant pages and preserve the actual problem statement. Never fabricate constraints, samples or judge acceptance.
+用户要求 C++ 信息学竞赛/基础语法教学讲义、课堂练习详解、家庭作业解题分析、原有讲义 PDF 的同风格续作或排版修订时使用。用户只要求逆向提取模板或修改 Skill 时，产出模板/Skill，不擅自编造题目或生成完整新教材。
 
-## Workflow
-1. Read `references/PROMPT.md` and the sample `templates/main.tex`.
-2. Preserve the lesson's two-section structure: `一、知识点讲解` then `二、课堂练习`.
-3. Replace content in `templates/main.tex`, keeping `lesson-style.sty` and `diagram-styles.tex` intact.
-4. Use XeLaTeX, run `scripts/build.sh` (Linux/macOS) or `scripts/build.ps1` (Windows).
-5. Render every PDF page to images and inspect text overflow, code line numbers, diagram correctness and font availability.
-6. Compare representative pages against the reference PDF, especially the first page, analysis/code pages, and table-heavy pages. Iterate until the style is consistent.
-7. Provide the compiled PDF and optionally the edited source files.
+## 执行前必读（按需逐层加载）
 
-## Requirements
-- A4 portrait, white, Song font, title #22598D, section headings #18766E, analysis headings #B4661D.
-- Main title ~24pt, major section ~14.3pt, subsection 12pt, body ~10.9pt, code ~9pt.
-- C++ code uses a white bordered listing, line numbers, and editor-style syntax colors.
-- Each exercise: problem statement, input/output, examples, constraints, summary, stepwise reasoning, sample derivation, key code modules, complexity, complete C++ solution.
-- Avoid adding covers, dates, institutions or logos unless requested.
-- If the original Fandol fonts are unavailable, configure a local Song-style font and disclose that the result is a visual approximation.
+1. `references/MASTER-PROMPT.md`：课程内容生成总提示词。
+2. `references/REVERSE-ENGINEERING.md`：对原 15 页 PDF 的页码级逆向证据及测量值。
+3. `references/PDF-STYLE-GUIDE.md`：版式、配色和 LaTeX 组件规范。
+4. `references/CODE-COMMENT-RULES.md`：**每题完整题解及中文核心注释强制标准**。
+5. `references/QA-CHECKLIST.md`：编译、样例、PDF 逐页检验和拒收规则。
 
-## Validation
-Run PDF info check, visually render all pages, inspect compilation warnings, and test the C++ reference solution with samples when possible. A successful PDF compilation alone does not prove layout fidelity or algorithm correctness.
+## 核心流程
+
+### A. 阅读并核对输入
+
+- 阅读用户全部已提供的相关知识点、源 PDF 页及代码；若 PDF 有图片/表格/图解，不能只依赖 OCR 或抽取的纯文本。
+- 逐题建立题面核对清单（题号、名称、输入、输出、样例、范围、特殊约定），禁止臆造没有提供的数据。
+- 若提供参考代码，**先分析原代码的执行逻辑与缺陷**，保留原算法和变量命名，必要的修复另行说明。
+- 原始题面、样例、已有题解出现矛盾时，注明源文件页码及冲突，不能暗中修改或宣称通过评测。
+
+### B. 制作教学内容
+
+默认分两部分：
+
+- `一、知识点讲解`：情境引入 → 准确定义 → 核心规则 → 算法步骤 → 图解/状态模拟 → 关键代码模块 → 易错点 → 复杂度/拓展。
+- `二、课堂练习`：**每一道题**含题目名称与限制、题目内容、输入输出、样例、数据范围、题意概括、题意分析与推导、推导分析过程（必要时图表）、关键代码模块、复杂度、完整 C++ 题解代码（核心关键注释）及结论。
+
+课后作业可使用 `一、课后作业详解`，但不得省略每题完整代码。不要仅生成概念、截图或 `<MINTED>` 占位符来冒充代码。
+
+### C. 根据原版式生成 PDF
+
+- 统一保留 A4 纵向、单栏白底、宋体、蓝/青绿/赭橙层级；采用 `templates/lesson-style.sty` 与 `templates/diagram-styles.tex`。
+- 原版的双色表格、输入输出双栏、蓝/绿/橙/红浅底说明框、无花哨封面和 TikZ 有向图按场景复用；不要全部强制铺满。
+- **使用 `tcolorbox` + `minted`** 呈现含 UTF-8 中文注释的 C++ 代码，代码文件单独存放。`minted` 在某些版本首遍编译显示 `<MINTED>`；必须至少编译两遍，提取 PDF 文本检查占位符确实消失。
+- 没有 XeLaTeX 或 Pygments 时不得声称 PDF 代码已经成功渲染；可提供 `.tex` / `.cpp` 源文件并说明限制。
+
+### D. 检验并交付
+
+- 运行 `scripts/build.sh` 或 `scripts/build.ps1`；执行 `scripts/validate.py --pdf output/main.pdf --check-demo-code`。
+- 在至少一种 PDF 渲染器下渲染全部页面，检查段落、标题、公式、表格、箭头、图形与代码框边界；对照原 PDF 的第 1 页（概念图/术语表）、第 5 页（双栏样例）、第 6 页（行号/关键代码）、第 8 页（推导框）、第 14 页（图+状态表）。
+- 编译 C++ 示例并在题意明确时比对给定样例；未经在线评测不得使用“已 AC”作为事实。
+- 交付可下载 PDF 和必要时的源文件/ZIP，明确报告验证范围、异常及未验证内容。
+
+## 优先级与边界
+
+1. **用户源文件准确性 > 算法正确性 > 可见完整代码 > 清晰教学逻辑 > 视觉精度 > 压缩页数。**
+2. 中文注释必须在最终 PDF 的代码块中可见，并非仅在外部文字解释里出现。
+3. 编译成功不等于内容正确或视觉复刻成功。必须检查 PDF 文本和渲染图。
+4. 用户要求“完全一致”时报告实际测量值，并将“风格高相似”与“逐页像素级一致”明确区分。
+5. 包装中不携带用户原始 PDF、外部字体文件或密钥；保留从原 PDF 提炼的参数和可再生成示例。
