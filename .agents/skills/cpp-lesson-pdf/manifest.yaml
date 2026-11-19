@@ -1,0 +1,27 @@
+name: cpp-lesson-pdf
+version: 1.2.0
+type: agent-skill
+language: zh-CN
+entrypoint: SKILL.md
+based_on:
+  reference_title: 拓扑排序课堂讲义.pdf
+  reference_pages: 15
+  reference_method: PDF text spans, font metrics, page geometry, vector draw analysis, visual comparison
+capabilities:
+  - reverse_engineer_reference_pdf_style
+  - preserve_and_analyze_source_problem_statements
+  - review_user_supplied_cpp_before_rewriting
+  - generate_sectioned_algorithm_lesson_handouts
+  - generate_complete_cpp_solutions_with_chinese_comments
+  - editor_style_unicode_code_highlighting
+  - create_vector_algorithm_visuals_and_tables
+  - xelatex_build_and_render_validation
+runtime:
+  required:
+    - XeLaTeX with ctex, xeCJK, tcolorbox, TikZ, minted and fontspec
+    - Python 3 and Pygments / latexminted
+  optional:
+    - PyMuPDF for layout inspection
+    - pdftoppm for visual rendering
+    - pdftotext and pdfinfo for PDF text and metadata checking
+    - g++ for standalone C++ verification

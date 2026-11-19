@@ -1,0 +1,93 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{lesson-style}[2026/11/19 v1.2 reverse engineered C++ handout style]
+\RequirePackage[a4paper,left=20mm,right=20mm,top=18mm,bottom=20mm]{geometry}
+\RequirePackage{fontspec}
+\RequirePackage{xeCJK}
+% Source uses FandolSong. Do NOT package font files; use system/TeX fonts.
+\IfFileExists{/usr/share/texlive/texmf-dist/fonts/opentype/public/fandol/FandolSong-Regular.otf}{%
+  \setCJKmainfont[Path=/usr/share/texlive/texmf-dist/fonts/opentype/public/fandol/,Extension=.otf,BoldFont=FandolSong-Bold]{FandolSong-Regular}%
+  \setCJKmonofont[Path=/usr/share/texlive/texmf-dist/fonts/opentype/public/fandol/,Extension=.otf]{FandolSong-Regular}%
+}{%
+  \IfFontExistsTF{FandolSong-Regular}{%
+    \setCJKmainfont[BoldFont=FandolSong-Bold]{FandolSong-Regular}%
+    \setCJKmonofont{FandolSong-Regular}%
+  }{%
+    \IfFontExistsTF{SimSun}{\setCJKmainfont{SimSun}\setCJKmonofont{SimSun}}{%
+      \IfFontExistsTF{Noto Serif CJK SC}{\setCJKmainfont{Noto Serif CJK SC}\setCJKmonofont{Noto Serif CJK SC}}{%
+        \setCJKmainfont{FandolSong-Regular}\setCJKmonofont{FandolSong-Regular}}%
+    }%
+  }%
+}
+\IfFileExists{/usr/share/texmf/fonts/opentype/public/lm/lmroman10-regular.otf}{%
+ \setmainfont[Path=/usr/share/texmf/fonts/opentype/public/lm/,Extension=.otf,BoldFont=lmroman10-bold,ItalicFont=lmroman10-italic]{lmroman10-regular}%
+ \setmonofont[Path=/usr/share/texmf/fonts/opentype/public/lm/,Extension=.otf,ItalicFont=lmmono10-italic]{lmmono10-regular}%
+}{%
+ \IfFontExistsTF{Latin Modern Roman}{\setmainfont{Latin Modern Roman}}{\setmainfont{TeX Gyre Termes}}%
+ \IfFontExistsTF{Latin Modern Mono}{\setmonofont{Latin Modern Mono}}{\setmonofont{DejaVu Sans Mono}}%
+}
+\RequirePackage{xcolor}
+\definecolor{LessonBlue}{HTML}{22598D}
+\definecolor{LessonTeal}{HTML}{18766E}
+\definecolor{LessonOrange}{HTML}{B4661D}
+\definecolor{LessonLine}{HTML}{D5E0E9}
+\definecolor{LessonCodeNumber}{HTML}{7F807F}
+\definecolor{LessonGraph}{HTML}{5781A8}
+\definecolor{LessonBlueStripe}{HTML}{9EB6CD}
+\definecolor{LessonPaleBlue}{HTML}{F1F7FD}
+\definecolor{LessonTealStripe}{HTML}{95C0BC}
+\definecolor{LessonPaleTeal}{HTML}{F0F9F5}
+\definecolor{LessonOrangeStripe}{HTML}{DBB593}
+\definecolor{LessonPaleOrange}{HTML}{FFF7EF}
+\definecolor{LessonRedStripe}{HTML}{DCA1A6}
+\definecolor{LessonPaleRed}{HTML}{FFF3F2}
+\RequirePackage{amsmath,amssymb}
+\RequirePackage{titlesec}
+\RequirePackage{enumitem}
+\RequirePackage{booktabs,tabularx,array}
+\RequirePackage[most]{tcolorbox}
+\tcbuselibrary{minted,skins,breakable,raster}
+\RequirePackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc}
+\RequirePackage{needspace}
+\RequirePackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=LessonBlue,urlcolor=LessonTeal}
+\setlength{\parindent}{2em}
+\setlength{\parskip}{2.6pt}
+\linespread{1.18}
+\setlength{\emergencystretch}{2em}
+\setlist[enumerate]{leftmargin=2.5em,topsep=4pt,itemsep=2pt}
+\setlist[itemize]{leftmargin=2.5em,topsep=4pt,itemsep=2pt}
+\titleformat{\section}{\fontsize{14.35}{20}\bfseries\color{LessonBlue}}{}{0pt}{}
+\titlespacing*{\section}{0pt}{15pt}{8pt}
+\titleformat{\subsection}{\fontsize{11.96}{17}\bfseries\color{LessonTeal}}{}{0pt}{}
+\titlespacing*{\subsection}{0pt}{12pt}{6pt}
+\titleformat{\subsubsection}{\fontsize{10.91}{16}\bfseries\color{LessonOrange}}{}{0pt}{}
+\titlespacing*{\subsubsection}{0pt}{10pt}{4pt}
+\newcommand{\LessonTitle}[2]{\begin{center}\vspace*{-6pt}{\fontsize{23.91}{31}\bfseries\color{LessonBlue}#1\par}\vspace{5pt}{\fontsize{10.91}{16}\color{LessonTeal}#2\par}\end{center}\vspace{10pt}}
+\newcommand{\LessonLabel}[1]{\Needspace{4\baselineskip}\par\smallskip\noindent{\fontsize{10.91}{16}\selectfont\bfseries\color{LessonOrange}#1}\par\smallskip}
+\newcommand{\LessonMeta}[1]{\par\noindent{\fontsize{9.8}{14}\selectfont\color{LessonTeal}#1}\par\smallskip}
+\newcommand{\LessonMath}[1]{\[\displaystyle #1\]}
+% Source PDF uses strip-headed soft-colored boxes, not modern filled callouts.
+\newtcolorbox{lessonblue}[1]{enhanced,breakable,sharp corners,colback=LessonPaleBlue,colframe=LessonBlueStripe,colbacktitle=LessonBlueStripe,coltitle=LessonBlue,title={#1},fonttitle=\bfseries\small,boxrule=.55pt,left=8pt,right=8pt,top=5pt,bottom=6pt,toptitle=3pt,bottomtitle=3pt,before skip=8pt,after skip=8pt}
+\newtcolorbox{lessonteal}[1]{enhanced,breakable,sharp corners,colback=LessonPaleTeal,colframe=LessonTealStripe,colbacktitle=LessonTealStripe,coltitle=LessonTeal,title={#1},fonttitle=\bfseries\small,boxrule=.55pt,left=8pt,right=8pt,top=5pt,bottom=6pt,toptitle=3pt,bottomtitle=3pt,before skip=8pt,after skip=8pt}
+\newtcolorbox{lessonorange}[1]{enhanced,breakable,sharp corners,colback=LessonPaleOrange,colframe=LessonOrangeStripe,colbacktitle=LessonOrangeStripe,coltitle=LessonOrange,title={#1},fonttitle=\bfseries\small,boxrule=.55pt,left=8pt,right=8pt,top=5pt,bottom=6pt,toptitle=3pt,bottomtitle=3pt,before skip=8pt,after skip=8pt}
+\newtcolorbox{lessonred}[1]{enhanced,breakable,sharp corners,colback=LessonPaleRed,colframe=LessonRedStripe,colbacktitle=LessonRedStripe,coltitle=LessonOrange,title={#1},fonttitle=\bfseries\small,boxrule=.55pt,left=8pt,right=8pt,top=5pt,bottom=6pt,toptitle=3pt,bottomtitle=3pt,before skip=8pt,after skip=8pt}
+% A Unicode-capable C++ code block. Source is the *same* standalone .cpp file tested by g++.
+% XeLaTeX minted v3 can initially emit <MINTED>; always compile at least twice and validate PDF text.
+\newcommand{\LessonCodeFile}[1]{%
+\tcbinputlisting{
+ listing file={#1},listing engine=minted,minted language=cpp,minted style=vs,
+ minted options={fontsize=\footnotesize,linenos,numbersep=8pt,breaklines,tabsize=4,autogobble=false},
+ listing only,breakable,enhanced,sharp corners,
+ colback=white,colframe=LessonLine,boxrule=.55pt,
+ left=6pt,right=4pt,top=6pt,bottom=6pt,
+ before skip=8pt,after skip=8pt,
+ }
+}
+\newcommand{\LessonSourceBox}[1]{\begin{tcolorbox}[enhanced,sharp corners,colback=white,colframe=LessonLine,boxrule=.55pt,left=6pt,right=6pt,top=6pt,bottom=6pt]#1\end{tcolorbox}}
+\newcommand{\LessonInputOutputStart}{\begin{tcbraster}[raster columns=2,raster equal height,raster column skip=7mm]}
+\newcommand{\LessonInputOutputEnd}{\end{tcbraster}}
+\newtcolorbox{lessoninput}{enhanced,sharp corners,colback=LessonPaleBlue,colframe=LessonBlueStripe,colbacktitle=LessonBlueStripe,coltitle=LessonBlue,title={输入},fonttitle=\bfseries\small,boxrule=.55pt,left=8pt,right=8pt,top=5pt,bottom=6pt}
+\newtcolorbox{lessonoutput}{enhanced,sharp corners,colback=LessonPaleBlue,colframe=LessonBlueStripe,colbacktitle=LessonBlueStripe,coltitle=LessonBlue,title={输出},fonttitle=\bfseries\small,boxrule=.55pt,left=8pt,right=8pt,top=5pt,bottom=6pt}
+\pagestyle{plain}
+\AtBeginDocument{\fontsize{10.91}{16.3}\selectfont}
