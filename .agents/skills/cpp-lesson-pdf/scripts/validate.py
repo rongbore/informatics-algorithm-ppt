@@ -34,6 +34,17 @@ def check_files(root, errs):
         if not all(token in code for token in ('#include', 'main(', 'cout')):
             errs.append(f'Example C++ source is incomplete: {src}')
 
+def check_code_style(root, errs):
+    """Reject line-number gutters in generated C++ listings."""
+    style = (root / 'templates/lesson-style.sty').read_text('utf-8')
+    macro = re.search(r'minted options=\{([^}]*)\}', style)
+    if macro and ('linenos' in macro.group(1) or 'numbersep' in macro.group(1)):
+        errs.append('C++ minted listing must not show or reserve line numbers')
+    if 'numbers=left' in style or 'numbers=right' in style:
+        errs.append('C++ listings must not show line numbers')
+    if 'numbers=none' not in style and 'minted options=' not in style:
+        errs.append('C++ listing style must explicitly disable line numbers')
+
 def check_tex(root, errs):
     tex = (root/'templates/main.tex').read_text('utf-8')
     if not re.search(r'\\LessonCodeFile\s*\{',tex):
@@ -60,7 +71,7 @@ def check_pdf(pdf, errs):
                 x0,y0,x1,y1=span['bbox']
                 if x0<-2 or x1>p.rect.width+2 or y0<-2 or y1>p.rect.height+2:
                     errs.append(f'Page {i+1}: text span outside page ({span["text"][:30]})')
-        for bad in ['<MINTED>', '<LISTINGS>', 'PLACEHOLDER', '�']:
+        for bad in ['<MINTED>', '<LISTINGS>', 'PLACEHOLDER', '�', '排版说明']:
             if bad in alltxt:errs.append(f'Unrendered/malformed marker in PDF: {bad}')
         if '核心' not in alltxt and '前置' not in alltxt:
             errs.append('PDF text may not include Chinese core comments')
@@ -130,6 +141,7 @@ def main():
     args=ap.parse_args()
     root=Path(args.root).resolve();errs=[]
     check_files(root,errs)
+    check_code_style(root,errs)
     check_visual_derivation(root,errs)
     check_toposort_derivation(root,errs)
     if args.require_code_comments:check_tex(root,errs)
