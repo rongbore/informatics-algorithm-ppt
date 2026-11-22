@@ -15,6 +15,9 @@ FILES = [
     'templates/main.tex', 'templates/lesson-style.sty',
     'templates/diagram-styles.tex', 'examples/code/toposort_demo.cpp',
     'scripts/build.sh', 'scripts/build.ps1', 'scripts/validate.py',
+    'references/DEEP-REASONING-STEPS.md', 'references/VISUAL-DERIVATION-STANDARD.md',
+    'examples/derivations/tree_knapsack_merge.json',
+    'examples/derivations/tree_knapsack_visual.tex', 'scripts/trace_dp_merge.py',
 ]
 
 def check_files(root, errs):
@@ -82,6 +85,21 @@ def check_cpp(root,errs):
     if cp.returncode:errs.append('C++ syntax check failed: '+cp.stderr[-600:])
     else:print('C++ demo: g++ -std=c++17 syntax check passed')
 
+def check_visual_derivation(root, errs):
+    """Check that the teaching j/k transition table can be recreated."""
+    trace = root / 'scripts/trace_dp_merge.py'
+    data = root / 'examples/derivations/tree_knapsack_merge.json'
+    if not trace.exists() or not data.exists():
+        return
+    result = subprocess.run([sys.executable, str(trace), '--data', str(data)],
+                            capture_output=True, text=True, timeout=20)
+    if result.returncode != 0:
+        errs.append('DP visual trace check failed: ' + result.stderr[-500:])
+    elif '倒序合并的最终状态' not in result.stdout:
+        errs.append('DP visual trace output did not include expected state summary')
+    else:
+        print('DP visual derivation: verified transition table and forward-order counterexample')
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument('--root',default=str(Path(__file__).resolve().parents[1]))
@@ -91,6 +109,7 @@ def main():
     args=ap.parse_args()
     root=Path(args.root).resolve();errs=[]
     check_files(root,errs)
+    check_visual_derivation(root,errs)
     if args.require_code_comments:check_tex(root,errs)
     if args.pdf:check_pdf(Path(args.pdf),errs)
     if args.check_demo_code:check_cpp(root,errs)

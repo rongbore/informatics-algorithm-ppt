@@ -53,3 +53,19 @@ Windows：`powershell -ExecutionPolicy Bypass -File scripts/build.ps1`
 本包复刻字体层级、颜色、版心、组件和教学逻辑，不宣称像素级完全一致（未获得原始 XeLaTeX 源码）。包中不包含原 PDF 或字体文件，便于管理版权及环境兼容。
 
 示例 PDF 可以由 `templates/main.tex` 编译生成；仓库只提交可复现源码，不包含生成的二进制 PDF。
+
+
+## v1.3：解题步骤与数据推演增强
+
+新增 `references/DEEP-REASONING-STEPS.md`（八步教学法）和 `references/VISUAL-DERIVATION-STANDARD.md`（按算法分类的可视化表格标准）。
+
+运行校验示例：
+
+```bash
+python3 scripts/trace_dp_merge.py --markdown output/tree-knapsack-trace.md
+python3 scripts/validate.py --check-demo-code
+```
+
+示例数据文件：`examples/derivations/tree_knapsack_merge.json`。它来自用户上传《解析.pdf》第 3 页的**教学构造数据**，不是官方题目样例；另有 `tree_knapsack_visual.tex` 可嵌入使用 TikZ 和 LaTeX 的讲义。
+
+最重要的验收条件：每道复杂算法题都必须交代状态定义、执行时机、循环与合法性条件、候选公式、逐步表格、错误反例与完整 C++ 代码。推导表需要能被数据或脚本复算，不允许仅凭图形生成器编造数值。
