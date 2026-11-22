@@ -1,0 +1,44 @@
+% 教学示意片段（需在 lesson-style.sty 和 diagram-styles.tex 加载后 \input）
+% 数值对应《解析.pdf》第3页的说明示例，非原题官方样例。
+\subsection{数据可视化推导示例：树形背包合并}
+\begin{lessonblue}{合并前：先确认每一格的含义}
+旧部分 \(f[u][0..2]=(0,5,8)\)，新子树 \(f[v][0..2]=(0,4,7)\)。
+当前 \(sz[u]=2\)、\(sz[v]=2\)，连接费用 \(w=2\)。
+\end{lessonblue}
+\begin{center}
+\begin{tikzpicture}
+\node[lessonnode] (u) at (0,1.8) {$u$};
+\node[lessonnode] (v) at (0,0.5) {$v$};
+\node[lessonbox] (old) at (-2.8,0.5) {旧部分：$[0,5,8]$};
+\node[lessonbox] (child) at (2.8,0.5) {新子树：$[0,4,7]$};
+\draw[lessonedge] (u)--node[right,font=\small,text=LessonOrange] {$w=2$} (v);
+\draw[lessonedgemuted] (old)--(u);
+\draw[lessonedgemuted] (child)--(v);
+\end{tikzpicture}
+\end{center}
+\LessonLabel{逐次更新：列出合法方案与跳过原因}
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}c c X l@{}}
+\toprule
+$j$ & $k$ & 本次计算与跳过原因 & 当前最优\\\midrule
+4 & 1 & 旧部分需选 3 人，超过 $sz[u]=2$ & 跳过\\
+4 & 2 & $8+7-2=13$ & \textcolor{LessonTeal}{13}\\
+3 & 1 & $8+4-2=10$ & \textcolor{LessonTeal}{10}\\
+3 & 2 & $5+7-2=10$ & 10\\
+2 & 1 & $5+4-2=7<8$ & 8（保留）\\
+2 & 2 & $0+7-2=5<8$ & 8（保留）\\
+1 & 1 & $0+4-2=2<5$ & 5（保留）\\
+\bottomrule
+\end{tabularx}
+\end{center}
+\begin{lessonteal}{合并后：每一格都可由上表推得}
+\centering \(f[u][0..4]=(0,5,8,\textcolor{LessonTeal}{10},\textcolor{LessonTeal}{13})\)。
+
+这里的 0、5、8 保留旧值，并非没有考虑新子树。
+\end{lessonteal}
+\begin{lessonred}{反例：不能把本轮刚写入的状态当作旧状态}
+若旧数组为 $[0,2]$，新子树为 $[0,5]$，费用为 0。
+正序先得到 $f[u][1]=5$，再错误地以新值计算 $f[u][2]=5+5=10$。
+原地倒序可得到正确的 $f[u][2]=2+5=7$。
+\end{lessonred}
