@@ -69,3 +69,16 @@ python3 scripts/validate.py --check-demo-code
 示例数据文件：`examples/derivations/tree_knapsack_merge.json`。它来自用户上传《解析.pdf》第 3 页的**教学构造数据**，不是官方题目样例；另有 `tree_knapsack_visual.tex` 可嵌入使用 TikZ 和 LaTeX 的讲义。
 
 最重要的验收条件：每道复杂算法题都必须交代状态定义、执行时机、循环与合法性条件、候选公式、逐步表格、错误反例与完整 C++ 代码。推导表需要能被数据或脚本复算，不允许仅凭图形生成器编造数值。
+
+## v1.3.1：拓扑排序逐步图解与程序验算
+
+在 v1.3 树形背包数值推演基础上，新增 Kahn 拓扑排序的**全步骤状态轨迹**：依赖图、初始入度、每次出队、每条有向边的入度更新、新增入队节点、完整队列变化、拓扑序和环检测。
+
+源文件：`scripts/trace_toposort.py`、`examples/derivations/toposort_cases.json`、`examples/derivations/toposort_visual.tex`。
+
+```bash
+python3 scripts/trace_toposort.py --markdown output/toposort-trace.md --latex output/toposort-tables.tex
+python3 -m unittest discover -s tests -p 'test_*.py' -v
+```
+
+这两份推导演示数据都是课堂构造数据，**不属于题库官方样例**；生成 LaTeX 依赖 XeLaTeX/longtable，仍需 PDF 逐页视觉检查。
