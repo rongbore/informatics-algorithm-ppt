@@ -19,6 +19,7 @@ FILES = [
     'examples/derivations/tree_knapsack_merge.json',
     'examples/derivations/tree_knapsack_visual.tex', 'scripts/trace_dp_merge.py',
     'references/TOPOSORT-TRACE-WORKFLOW.md', 'scripts/trace_toposort.py',
+    'tests/test_code_presentation_policy.py',
     'examples/derivations/toposort_cases.json',
     'examples/derivations/toposort_visual.tex',
 ]
