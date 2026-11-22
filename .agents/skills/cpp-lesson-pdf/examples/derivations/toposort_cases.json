@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "provenance": "为课堂讲解构造的教学示意数据；不是《拓扑排序课堂讲义.pdf》中的正式题目样例",
+  "cases": [
+    {
+      "id": "dag",
+      "title": "两个前驱汇合的 DAG",
+      "n": 6,
+      "edges": [
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          3
+        ],
+        [
+          2,
+          4
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          3,
+          6
+        ]
+      ],
+      "expected_initial_indegree": [
+        0,
+        1,
+        1,
+        2,
+        1,
+        1
+      ],
+      "expected_initial_queue": [
+        1
+      ],
+      "expected_queue_after": [
+        [
+          2,
+          3
+        ],
+        [
+          3
+        ],
+        [
+          4,
+          6
+        ],
+        [
+          6,
+          5
+        ],
+        [
+          5
+        ],
+        []
+      ],
+      "expected_order": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        5
+      ],
+      "expected_cycle": false
+    },
+    {
+      "id": "cycle",
+      "title": "部分节点可处理、剩余节点含环",
+      "n": 4,
+      "edges": [
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          3,
+          4
+        ]
+      ],
+      "expected_initial_indegree": [
+        0,
+        2,
+        1,
+        1
+      ],
+      "expected_initial_queue": [
+        1
+      ],
+      "expected_queue_after": [
+        []
+      ],
+      "expected_order": [
+        1
+      ],
+      "expected_cycle": true
+    }
+  ]
+}
