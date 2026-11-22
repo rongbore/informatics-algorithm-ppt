@@ -16,14 +16,14 @@ Ask for the topic, knowledge points, full problem statements, sample I/O, constr
 2. Preserve the lesson's two-section structure: `一、知识点讲解` then `二、课堂练习`.
 3. Replace content in `templates/main.tex`, keeping `lesson-style.sty` and `diagram-styles.tex` intact.
 4. Use XeLaTeX, run `scripts/build.sh` (Linux/macOS) or `scripts/build.ps1` (Windows).
-5. Render every PDF page to images and inspect text overflow, code line numbers, diagram correctness and font availability.
+5. Render every PDF page to images and inspect text overflow, confirm **C++ code has no line numbers or reserved numbering gutter**, diagram correctness and font availability.
 6. Compare representative pages against the reference PDF, especially the first page, analysis/code pages, and table-heavy pages. Iterate until the style is consistent.
 7. Provide the compiled PDF and optionally the edited source files.
 
 ## Requirements
 - A4 portrait, white, Song font, title #22598D, section headings #18766E, analysis headings #B4661D.
 - Main title ~24pt, major section ~14.3pt, subsection 12pt, body ~10.9pt, code ~9pt.
-- C++ code uses a white bordered listing, line numbers, and editor-style syntax colors.
+- C++ code uses a white bordered listing with **no line numbers**, no numbering gutter, and editor-style syntax colors.
 - Each exercise: problem statement, input/output, examples, constraints, summary, stepwise reasoning, sample derivation, key code modules, complexity, complete C++ solution.
 - Avoid adding covers, dates, institutions or logos unless requested.
 - If the original Fandol fonts are unavailable, configure a local Song-style font and disclose that the result is a visual approximation.
@@ -48,3 +48,12 @@ Project-level Web Codex installations use `.agents/skills/cpp-lesson-pdf/` as th
 Read `references/TOPOSORT-TRACE-WORKFLOW.md` when generating topological-sort lessons. Run `scripts/trace_toposort.py --markdown output/toposort-trace.md --latex output/toposort-tables.tex` to produce per-step queue/indegree updates and verified LaTeX tables. Do not confuse FIFO order with lexicographically smallest topo sort. On a cycle, explicitly state that a complete ordering is impossible. Preserve source/sample provenance and complete C++ solutions with Chinese comments.
 
 The canonical Codex Web project-level Skill is `.agents/skills/cpp-lesson-pdf/`; this legacy directory retains a compatible copy of the graph-tracing data, script and documentation.
+
+
+## v1.3.2 用户明确指定的代码页规则（高优先级）
+
+- 最终学生 PDF 中**删除“排版说明”板块**，不添加源码引入方式、代码颜色、行号显示、编译/渲染过程等制作元说明。代码标题后直接进入代码框。
+- C++ 代码块左侧和右侧都不显示行号，不保留空白编号 gutter。
+- 保留正常 C++ 编辑器语法高亮、等宽字体、中文核心注释、白底浅灰蓝边框和完整源码。
+- `templates/lesson-style.sty` 必须使用 `numbers=none`；禁止 `numbers=left/right`。
+- 这些要求覆盖历史参考 PDF 曾经使用行号的做法。
