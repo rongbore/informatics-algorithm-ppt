@@ -74,9 +74,10 @@ class ToposortTraceTests(unittest.TestCase):
     def test_markdown_has_provenance_all_steps_and_cycle_warning(self):
         with tempfile.TemporaryDirectory() as tmp:
             dest = Path(tmp) / "toposort-trace.md"
+            latex = Path(tmp) / "toposort-tables.tex"
             completed = subprocess.run(
                 [sys.executable, str(SCRIPT), "--data", str(DATA),
-                 "--markdown", str(dest)], check=True, capture_output=True,
+                 "--markdown", str(dest), "--latex", str(latex)], check=True, capture_output=True,
                 encoding="utf-8", text=True,
             )
             content = dest.read_text(encoding="utf-8")
@@ -85,6 +86,11 @@ class ToposortTraceTests(unittest.TestCase):
             self.assertIn("1→2: 1→0（入队）", content)
             self.assertIn("存在有向环", content)
             self.assertIn("拓扑序不一定唯一", content)
+            tex = latex.read_text(encoding="utf-8")
+            self.assertIn(r"\\begin{longtable}", tex)
+            self.assertIn("1→2: 1→0", tex)
+            self.assertIn(r"\\endfirsthead", tex)
+            self.assertIn("存在环", tex)
 
     @unittest.skipUnless(shutil.which("g++"), "g++ not installed")
     def test_actual_cpp_demo_matches_trace(self):
