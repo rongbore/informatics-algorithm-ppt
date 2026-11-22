@@ -1,5 +1,5 @@
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{lesson-style}[2026/11/19 v1.2 reverse engineered C++ handout style]
+\ProvidesPackage{lesson-style}[2026/11/22 v1.3.2 clean code layout without line numbers]
 \RequirePackage[a4paper,left=20mm,right=20mm,top=18mm,bottom=20mm]{geometry}
 \RequirePackage{fontspec}
 \RequirePackage{xeCJK}
@@ -77,7 +77,7 @@
 \newcommand{\LessonCodeFile}[1]{%
 \tcbinputlisting{
  listing file={#1},listing engine=minted,minted language=cpp,minted style=vs,
- minted options={fontsize=\footnotesize,linenos,numbersep=8pt,breaklines,tabsize=4,autogobble=false},
+ minted options={fontsize=\footnotesize,breaklines,tabsize=4,autogobble=false},
  listing only,breakable,enhanced,sharp corners,
  colback=white,colframe=LessonLine,boxrule=.55pt,
  left=6pt,right=4pt,top=6pt,bottom=6pt,
