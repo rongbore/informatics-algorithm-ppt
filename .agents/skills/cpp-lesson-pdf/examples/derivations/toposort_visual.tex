@@ -1,0 +1,27 @@
+% Companion diagram for examples/derivations/toposort_cases.json case "dag".
+% Graph edges: 1->2,1->3,2->4,3->4,4->5,3->6.
+% Generate the accompanying *numeric table* from the same JSON via
+% python3 scripts/trace_toposort.py --latex output/toposort-tables.tex
+% Then, from templates/main.tex, \input this file followed by \input{../output/toposort-tables.tex}.
+\LessonLabel{示意图：FIFO 队列拓扑排序的依赖关系}
+\begin{center}
+\begin{tikzpicture}[x=1cm,y=1cm]
+\node[lessonnode] (n1) at (0,0) {1};
+\node[lessonnode] (n2) at (2,1.1) {2};
+\node[lessonnode] (n3) at (2,-1.1) {3};
+\node[lessonnode] (n4) at (4,0.8) {4};
+\node[lessonnode] (n5) at (6,0.8) {5};
+\node[lessonnode] (n6) at (4,-1.5) {6};
+\draw[lessonedge] (n1)--(n2);
+\draw[lessonedge] (n1)--(n3);
+\draw[lessonedge] (n2)--(n4);
+\draw[lessonedge] (n3)--(n4);
+\draw[lessonedge] (n4)--(n5);
+\draw[lessonedge] (n3)--(n6);
+\node[lessonnote,below=6mm of n3] {入度为零后才会入队};
+\end{tikzpicture}
+\end{center}
+\begin{lessonteal}{队列的教学观察点}
+顶点 4 必须等待 2 和 3 都处理完成，才会变成零入度；顶点 6 只依赖 3，因而会在处理 3 后入队。
+请以自动生成的逐步表为准核对本例的队列顺序。
+\end{lessonteal}
