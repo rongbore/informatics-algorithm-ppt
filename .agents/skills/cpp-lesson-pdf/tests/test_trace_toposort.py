@@ -80,7 +80,7 @@ class ToposortTraceTests(unittest.TestCase):
                 encoding="utf-8", text=True,
             )
             content = dest.read_text(encoding="utf-8")
-            self.assertEqual(content, completed.stdout.rstrip("\n"))
+            self.assertEqual(content + "\n", completed.stdout)
             self.assertIn("教学", content)
             self.assertIn("1→2: 1→0（入队）", content)
             self.assertIn("存在有向环", content)
