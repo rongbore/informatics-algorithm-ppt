@@ -135,6 +135,58 @@ def to_markdown(case, result, provenance):
     return "\n".join(out)
 
 
+def to_latex(case, result, provenance):
+    """Emit a paginated longtable whose numbers come only from the verified trace."""
+    def tex_escape(value):
+        translation = {
+            "\\": r"\textbackslash{}", "&": r"\&", "%": r"\%",
+            "$": r"\$", "#": r"\#", "_": r"\_",
+            "{": r"\{", "}": r"\}", "~": r"\textasciitilde{}",
+            "^": r"\textasciicircum{}",
+        }
+        return "".join(translation.get(x, x) for x in str(value))
+
+    out = [
+        r"\subsection{" + tex_escape(case.get("title", case["id"])) + "}",
+        r"\noindent\textit{数据来源：" + tex_escape(provenance) + r"}\par",
+        r"\noindent 初始入度：" + tex_escape(as_cell(result["initial_indegree"]))
+        + r"；初始队列：" + tex_escape(as_cell(result["initial_queue"])) + r"\par",
+        r"\begingroup\footnotesize",
+        r"\begin{longtable}{@{}r p{0.14\linewidth} r p{0.43\linewidth} p{0.16\linewidth}@{}}",
+        r"\toprule 步骤 & 队列（前） & 出队 & 入度变化 & 队列（后）\\\midrule",
+        r"\endfirsthead",
+        r"\toprule 步骤 & 队列（前） & 出队 & 入度变化 & 队列（后）\\\midrule",
+        r"\endhead",
+        r"\bottomrule",
+        r"\endfoot",
+    ]
+    for s in result["steps"]:
+        changes = "；".join(
+            f'{u}→{v}: {edge["before"]}→{edge["after"]}' +
+            ("（入队）" if edge["enqueued"] else "")
+            for edge in s["updates"] for u, v in [edge["edge"]]
+        ) or "无出边"
+        out.append(
+            f'{s["step"]} & {tex_escape(as_cell(s["queue_before"]))}'
+            f' & {s["processed"]} & {tex_escape(changes)}'
+            f' & {tex_escape(as_cell(s["queue_after"]))}' + r"\\"
+        )
+    if not result["steps"]:
+        out.append(r"0 & [] & -- & 初始队列为空 & []\\")
+    out.append(r"\end{longtable}\endgroup")
+    if result["cycle"]:
+        out.append(
+            r"\noindent\textcolor{LessonOrange}{结论：处理节点数不足，图中存在环。}"
+            + r"\par"
+        )
+    else:
+        out.append(
+            r"\noindent\textcolor{LessonTeal}{合法拓扑序：}"
+            + tex_escape(as_cell(result["order"])) + r"\par"
+        )
+    return "\n".join(out) + "\n"
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument(
@@ -142,17 +194,24 @@ def main():
         default=Path(__file__).resolve().parents[1] / "examples/derivations/toposort_cases.json",
     )
     ap.add_argument("--markdown", type=Path, help="write reproducible Markdown trace")
+    ap.add_argument("--latex", type=Path, help="write computed LaTeX longtables")
     args = ap.parse_args()
     data = json.loads(args.data.read_text(encoding="utf-8"))
     if not data.get("provenance") or not data.get("cases"):
         raise ValueError("data must include provenance and cases")
     chunks = ["# 拓扑排序：程序验证的队列与入度推导", ""]
+    latex_chunks = [r"% Generated from verified data; requires lesson-style.sty and longtable.", ""]
     for case in data["cases"]:
-        chunks.append(to_markdown(case, verify_case(case), data["provenance"]))
+        result = verify_case(case)
+        chunks.append(to_markdown(case, result, data["provenance"]))
+        latex_chunks.append(to_latex(case, result, data["provenance"]))
     content = "\n".join(chunks)
     if args.markdown:
         args.markdown.parent.mkdir(parents=True, exist_ok=True)
         args.markdown.write_text(content, encoding="utf-8")
+    if args.latex:
+        args.latex.parent.mkdir(parents=True, exist_ok=True)
+        args.latex.write_text("\n".join(latex_chunks), encoding="utf-8")
     print(content)
 
 
