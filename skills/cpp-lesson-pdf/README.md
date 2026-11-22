@@ -41,3 +41,14 @@ Windows PowerShell：`powershell -ExecutionPolicy Bypass -File scripts/build.ps1
 执行 `python scripts/trace_dp_merge.py --markdown output/merge-trace.md` 生成经过程序复算的逐步推导记录。
 
 网页版 Codex 项目级 Skill 的规范源在 `.agents/skills/cpp-lesson-pdf/`，两种目录均保留相同的本次新增参考文档与脚本。本地 D 盘不会自动随着 GitHub 合并更新。
+
+
+## v1.3.1 拓扑排序推导
+
+提供 `scripts/trace_toposort.py`，同一份 JSON 输入可生成 Markdown 状态轨迹和 LaTeX 跨页长表；数据包括有向边、队列、入度更新、输出序列及有环检测，避免生成不真实的推导演示。
+
+```bash
+python3 scripts/trace_toposort.py --markdown output/toposort-trace.md --latex output/toposort-tables.tex
+```
+
+示意数据及图解见 `examples/derivations/toposort_cases.json`、`toposort_visual.tex`，规则详见 `references/TOPOSORT-TRACE-WORKFLOW.md`。项目级完整版维护在 `.agents/skills/cpp-lesson-pdf/`。
