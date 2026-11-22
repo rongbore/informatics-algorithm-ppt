@@ -1,0 +1,41 @@
+name: cpp-lesson-pdf-regression
+
+on:
+  pull_request:
+    paths:
+      - '.agents/skills/cpp-lesson-pdf/**'
+      - 'skills/cpp-lesson-pdf/**'
+      - '.github/workflows/cpp-lesson-pdf-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - '.agents/skills/cpp-lesson-pdf/**'
+      - 'skills/cpp-lesson-pdf/**'
+      - '.github/workflows/cpp-lesson-pdf-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-skill-and-derivations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v4
+      - name: Validate canonical Skill and C++ demo
+        run: |
+          python3 .agents/skills/cpp-lesson-pdf/scripts/validate.py \
+            --root .agents/skills/cpp-lesson-pdf \
+            --require-code-comments --check-demo-code
+      - name: Test DP visual derivations and legacy sync
+        run: |
+          python3 -m unittest discover \
+            -s .agents/skills/cpp-lesson-pdf/tests \
+            -p 'test_*.py' -v
+      - name: Generate trace for teaching review
+        run: |
+          python3 .agents/skills/cpp-lesson-pdf/scripts/trace_dp_merge.py \
+            --markdown "$RUNNER_TEMP/tree-knapsack-trace.md"
+          test -s "$RUNNER_TEMP/tree-knapsack-trace.md"
