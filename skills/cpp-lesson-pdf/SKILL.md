@@ -41,3 +41,10 @@ Use the smallest meaningful diagram/table for syntax exercises; for DP/tree/back
 For the tree-knapsack example described in the user's `解析.pdf`, run `python scripts/trace_dp_merge.py --markdown output/merge-trace.md` to verify candidate `j/k` updates and the forward-order bug. This is for in-place 0/1 child merge; do not assert that all DP implementations must use descending order. All numeric visuals must be checked, and PDFs must still pass text extraction and page rendering review.
 
 Project-level Web Codex installations use `.agents/skills/cpp-lesson-pdf/` as the canonical v1.3 copy. The files in this legacy directory are maintained for local installation compatibility.
+
+
+## v1.3.1 graph visualization workflow
+
+Read `references/TOPOSORT-TRACE-WORKFLOW.md` when generating topological-sort lessons. Run `scripts/trace_toposort.py --markdown output/toposort-trace.md --latex output/toposort-tables.tex` to produce per-step queue/indegree updates and verified LaTeX tables. Do not confuse FIFO order with lexicographically smallest topo sort. On a cycle, explicitly state that a complete ordering is impossible. Preserve source/sample provenance and complete C++ solutions with Chinese comments.
+
+The canonical Codex Web project-level Skill is `.agents/skills/cpp-lesson-pdf/`; this legacy directory retains a compatible copy of the graph-tracing data, script and documentation.
