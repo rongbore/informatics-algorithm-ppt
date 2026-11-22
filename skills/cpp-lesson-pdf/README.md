@@ -26,3 +26,18 @@ Windows PowerShell：`powershell -ExecutionPolicy Bypass -File scripts/build.ps1
 
 ## 复刻范围
 该模板复刻主要字体、字号层级、颜色、章节逻辑、代码框和图形语言。示例 PDF 是新内容的排版演示，并非原 15 页逐页重制，也未完成像素级一致性认证。
+
+
+## v1.3 深度推导与可视化更新
+
+重点增强解题步骤分析、循环变量解释、状态演变可视化、数据推演表、常见错误反例及完整题解代码映射。
+
+- `references/DEEP-REASONING-STEPS.md`：八步解题分析规范
+- `references/VISUAL-DERIVATION-STANDARD.md`：各类算法的图、表、状态更新规范
+- `examples/derivations/tree_knapsack_merge.json`：树形背包示例数据（非正式测试样例）
+- `examples/derivations/tree_knapsack_visual.tex`：LaTeX/TikZ 状态图与转移表
+- `scripts/trace_dp_merge.py`：程序复算候选转移与错误枚举方向反例
+
+执行 `python scripts/trace_dp_merge.py --markdown output/merge-trace.md` 生成经过程序复算的逐步推导记录。
+
+网页版 Codex 项目级 Skill 的规范源在 `.agents/skills/cpp-lesson-pdf/`，两种目录均保留相同的本次新增参考文档与脚本。本地 D 盘不会自动随着 GitHub 合并更新。
