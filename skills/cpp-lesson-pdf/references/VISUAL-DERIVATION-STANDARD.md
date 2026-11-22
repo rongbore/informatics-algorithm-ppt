@@ -46,3 +46,9 @@
 ## 写给生成模型的交付要求
 
 **解题步骤分析**（每一段必须包含条件/原因）+ **数据可视化推导过程**（初始化、动作、更新、结果可核验）+ **关键代码映射**（从推导指向语句）+ **完整题解代码**（中文核心注释）。如果不能验证表格数字，应先检查或明确不确定，不能作为确定答案展示。
+
+## v1.3.1 图论状态演示增强
+
+Kahn 拓扑排序推荐直接使用 `scripts/trace_toposort.py` 生成 Markdown 状态推导与可跨页的 LaTeX `longtable`。其 JSON 状态记录每条边的“入度之前→入度之后→是否入队”，以及处理前/后的完整队列和输出序列。样例 DAG 与含环图见 `examples/derivations/toposort_cases.json`。
+
+对应 TikZ 图放在 `examples/derivations/toposort_visual.tex`。请核对图形边与 JSON 一致，然后 `\input{../output/toposort-tables.tex}`，表中数据由脚本生成，不得再次手写。注意默认 FIFO 队列，不代表唯一拓扑序或字典序最小拓扑序。详见 `TOPOSORT-TRACE-WORKFLOW.md`。
