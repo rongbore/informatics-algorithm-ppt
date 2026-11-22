@@ -18,6 +18,9 @@ FILES = [
     'references/DEEP-REASONING-STEPS.md', 'references/VISUAL-DERIVATION-STANDARD.md',
     'examples/derivations/tree_knapsack_merge.json',
     'examples/derivations/tree_knapsack_visual.tex', 'scripts/trace_dp_merge.py',
+    'references/TOPOSORT-TRACE-WORKFLOW.md', 'scripts/trace_toposort.py',
+    'examples/derivations/toposort_cases.json',
+    'examples/derivations/toposort_visual.tex',
 ]
 
 def check_files(root, errs):
@@ -100,6 +103,24 @@ def check_visual_derivation(root, errs):
     else:
         print('DP visual derivation: verified transition table and forward-order counterexample')
 
+def check_toposort_derivation(root, errs):
+    """Regenerate and check each documented topology trace."""
+    script = root / 'scripts/trace_toposort.py'
+    data = root / 'examples/derivations/toposort_cases.json'
+    if not script.exists() or not data.exists():
+        return
+    try:
+        run = subprocess.run([sys.executable, str(script), '--data', str(data)],
+                             capture_output=True, text=True, timeout=20)
+        if run.returncode:
+            errs.append('Toposort visual trace failed: ' + run.stderr[-600:])
+        elif '存在有向环' not in run.stdout or '合法拓扑序' not in run.stdout:
+            errs.append('Toposort trace is missing DAG/cycle outcome explanations')
+        else:
+            print('Toposort derivation: verified all queue/indegree state snapshots')
+    except subprocess.TimeoutExpired:
+        errs.append('Toposort visual trace timed out')
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument('--root',default=str(Path(__file__).resolve().parents[1]))
@@ -110,6 +131,7 @@ def main():
     root=Path(args.root).resolve();errs=[]
     check_files(root,errs)
     check_visual_derivation(root,errs)
+    check_toposort_derivation(root,errs)
     if args.require_code_comments:check_tex(root,errs)
     if args.pdf:check_pdf(Path(args.pdf),errs)
     if args.check_demo_code:check_cpp(root,errs)
