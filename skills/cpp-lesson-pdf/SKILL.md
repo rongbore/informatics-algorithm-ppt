@@ -30,3 +30,14 @@ Ask for the topic, knowledge points, full problem statements, sample I/O, constr
 
 ## Validation
 Run PDF info check, visually render all pages, inspect compilation warnings, and test the C++ reference solution with samples when possible. A successful PDF compilation alone does not prove layout fidelity or algorithm correctness.
+
+
+## v1.3 mandatory reasoning and visual derivation upgrade
+
+Read `references/DEEP-REASONING-STEPS.md` and `references/VISUAL-DERIVATION-STANDARD.md` before generating any nontrivial C++ algorithm handout. In every exercise, explain **what each state means and when it becomes final**, why each loop bound and guard exists, and how each candidate transition is computed. Generate a reproducible chain **initial state → current choice → arithmetic and validity decision → updated state → final state → counterexample when applicable**.
+
+Use the smallest meaningful diagram/table for syntax exercises; for DP/tree/backpack/graph exercises include input provenance, old and new state snapshots, rejected candidates with reasons, a numeric transition table, and a mapping to the complete annotated C++ solution. Distinguish source-test samples from fabricated-for-teaching illustrative data. Never invent state changes.
+
+For the tree-knapsack example described in the user's `解析.pdf`, run `python scripts/trace_dp_merge.py --markdown output/merge-trace.md` to verify candidate `j/k` updates and the forward-order bug. This is for in-place 0/1 child merge; do not assert that all DP implementations must use descending order. All numeric visuals must be checked, and PDFs must still pass text extraction and page rendering review.
+
+Project-level Web Codex installations use `.agents/skills/cpp-lesson-pdf/` as the canonical v1.3 copy. The files in this legacy directory are maintained for local installation compatibility.
