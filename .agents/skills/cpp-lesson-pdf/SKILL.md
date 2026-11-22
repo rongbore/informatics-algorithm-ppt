@@ -3,7 +3,7 @@ name: cpp-lesson-pdf
 description: 依据课堂讲义和练习题 PDF，生成与《拓扑排序课堂讲义》版式一致的中文 C++ 信息学课堂、课后作业详解 PDF；包含原题保真、逐行因果分析、程序验证的状态推导表、矢量算法图、每题完整 C++ 解题代码、中文核心注释与代码编辑器语法高亮，并执行 XeLaTeX 编译及逐页质检。
 ---
 
-# cpp-lesson-pdf · Reference-calibrated v1.3
+# cpp-lesson-pdf · Reference-calibrated v1.3.1
 
 ## 何时启用
 
@@ -17,7 +17,8 @@ description: 依据课堂讲义和练习题 PDF，生成与《拓扑排序课堂
 4. `references/CODE-COMMENT-RULES.md`：**每题完整题解及中文核心注释强制标准**。
 5. `references/DEEP-REASONING-STEPS.md`：八步解题分析、状态语义、执行时机、循环上下界、反例论证。
 6. `references/VISUAL-DERIVATION-STANDARD.md`：按算法类型选择图形，规范初始/更新/结果三层状态表。
-7. `references/QA-CHECKLIST.md`：编译、样例、推导数值和 PDF 逐页检验及拒收规则。
+7. `references/TOPOSORT-TRACE-WORKFLOW.md`：拓扑排序队列/入度逐步图表，FIFO 语义及有环反例。
+8. `references/QA-CHECKLIST.md`：编译、样例、推导数值和 PDF 逐页检验及拒收规则。
 
 ## 核心流程
 
@@ -48,6 +49,7 @@ description: 依据课堂讲义和练习题 PDF，生成与《拓扑排序课堂
 ### D. 检验并交付
 
 - 运行 `scripts/build.sh` 或 `scripts/build.ps1`；执行 `scripts/validate.py --pdf output/main.pdf --check-demo-code`。
+- 对 DAG/拓扑题，运行 `python3 scripts/trace_toposort.py --markdown output/toposort-trace.md --latex output/toposort-tables.tex`，使用已验证的队列/入度状态生成分步图表。注意 FIFO 队列顺序**不等于字典序最小拓扑序**，有环时不能展示部分结果为完整排序。
 - 对涉及 DP 原地合并的示意案例，先运行 `python3 scripts/trace_dp_merge.py --markdown output/merge-trace.md` 核对每一项状态更新；其他算法也应尽可能以小脚本或人工逐格复核。只要画了状态表，就必须核对它与代码一致。
 - 在至少一种 PDF 渲染器下渲染全部页面，检查段落、标题、公式、表格、箭头、图形与代码框边界；对照原 PDF 的第 1 页（概念图/术语表）、第 5 页（双栏样例）、第 6 页（行号/关键代码）、第 8 页（推导框）、第 14 页（图+状态表）。
 - 编译 C++ 示例并在题意明确时比对给定样例；未经在线评测不得使用“已 AC”作为事实。
