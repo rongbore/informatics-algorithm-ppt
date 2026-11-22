@@ -1,5 +1,5 @@
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{lesson-style}[2026/11/15 C++ lesson PDF style]
+\ProvidesPackage{lesson-style}[2026/11/22 v1.3.2 C++ lesson PDF style without line numbers]
 \RequirePackage[a4paper,left=22mm,right=22mm,top=20mm,bottom=21mm]{geometry}
 \RequirePackage{fontspec}
 \RequirePackage{xeCJK}
@@ -39,7 +39,7 @@
 \newcommand{\LessonTitle}[2]{\begin{center}\vspace*{0pt}{\fontsize{24}{31}\bfseries\color{LessonBlue}#1\par}\vspace{5pt}{\fontsize{10.9}{16}\color{LessonTeal}#2\par}\end{center}\vspace{8pt}}
 \newcommand{\LessonLabel}[1]{\par\medskip\noindent{\bfseries\color{LessonOrange}#1}\par\smallskip}
 \newtcolorbox{lessonhint}[1][]{enhanced,breakable,colback=LessonPale,colframe=LessonBorder,boxrule=.55pt,arc=0pt,left=8pt,right=8pt,top=6pt,bottom=6pt,#1}
-\lstdefinestyle{lessoncpp}{language=C++,basicstyle=\ttfamily\fontsize{9}{12}\selectfont,keywordstyle=\color{CodeKeyword}\bfseries,commentstyle=\color{CodeComment},stringstyle=\color{CodeString},numbers=left,numberstyle=\tiny\color{gray},numbersep=9pt,frame=single,rulecolor=\color{LessonBorder},backgroundcolor=\color{white},breaklines=true,breakatwhitespace=true,showstringspaces=false,tabsize=4,columns=fullflexible,keepspaces=true,xleftmargin=11pt,framexleftmargin=8pt,aboveskip=8pt,belowskip=8pt}
+\lstdefinestyle{lessoncpp}{language=C++,basicstyle=\ttfamily\fontsize{9}{12}\selectfont,keywordstyle=\color{CodeKeyword}\bfseries,commentstyle=\color{CodeComment},stringstyle=\color{CodeString},numbers=none,frame=single,rulecolor=\color{LessonBorder},backgroundcolor=\color{white},breaklines=true,breakatwhitespace=true,showstringspaces=false,tabsize=4,columns=fullflexible,keepspaces=true,xleftmargin=0pt,framexleftmargin=0pt,aboveskip=8pt,belowskip=8pt}
 \lstdefinestyle{lessonfragment}{style=lessoncpp,numbers=none}
 \lstset{style=lessoncpp}
 \pagestyle{plain}

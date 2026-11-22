@@ -52,3 +52,11 @@ python3 scripts/trace_toposort.py --markdown output/toposort-trace.md --latex ou
 ```
 
 示意数据及图解见 `examples/derivations/toposort_cases.json`、`toposort_visual.tex`，规则详见 `references/TOPOSORT-TRACE-WORKFLOW.md`。项目级完整版维护在 `.agents/skills/cpp-lesson-pdf/`。
+
+
+## v1.3.2：去除代码行号与排版说明
+
+- C++ 代码块统一不显示行号，listings 使用 `numbers=none`，取消编号 gutter。
+- 最终学生讲义不出现“排版说明”板块或其他制作过程元说明；代码标题后直接显示完整代码。
+- 保留编辑器语法高亮、中文核心注释、白底浅边框与完整 C++ 源码。
+- 网页版 Codex 项目级完整版同步维护于 `.agents/skills/cpp-lesson-pdf/`。

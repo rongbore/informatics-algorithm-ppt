@@ -82,3 +82,11 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
 这两份推导演示数据都是课堂构造数据，**不属于题库官方样例**；生成 LaTeX 依赖 XeLaTeX/longtable，仍需 PDF 逐页视觉检查。
+
+
+## v1.3.2：代码页去行号与移除排版说明
+
+- 完整 C++ 代码继续使用编辑器风格语法高亮和中文核心注释，但代码左侧/右侧不显示行号，不预留编号 gutter。
+- 删除学生讲义中的“排版说明”板块及源码引入、配色/行号说明等制作元信息；代码标题后直接显示代码。
+- minted 不启用 `linenos`；listings 使用 `numbers=none`。
+- `scripts/validate.py` 新增样式与 PDF 内容检查，回归测试锁定该排版要求。
