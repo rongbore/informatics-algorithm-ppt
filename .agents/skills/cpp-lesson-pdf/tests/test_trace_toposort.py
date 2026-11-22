@@ -92,6 +92,19 @@ class ToposortTraceTests(unittest.TestCase):
             self.assertIn(r"\\endfirsthead", tex)
             self.assertIn("存在环", tex)
 
+    def test_legacy_sources_match_canonical(self):
+        repository = ROOT.parents[2]
+        legacy = repository / "skills" / "cpp-lesson-pdf"
+        for relative in (
+            "scripts/trace_toposort.py",
+            "examples/derivations/toposort_cases.json",
+            "examples/derivations/toposort_visual.tex",
+            "references/TOPOSORT-TRACE-WORKFLOW.md",
+        ):
+            with self.subTest(relative=relative):
+                self.assertEqual((ROOT / relative).read_bytes(),
+                                 (legacy / relative).read_bytes())
+
     @unittest.skipUnless(shutil.which("g++"), "g++ not installed")
     def test_actual_cpp_demo_matches_trace(self):
         cpp = ROOT / "examples/code/toposort_demo.cpp"
