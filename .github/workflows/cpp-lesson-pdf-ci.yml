@@ -39,3 +39,10 @@ jobs:
           python3 .agents/skills/cpp-lesson-pdf/scripts/trace_dp_merge.py \
             --markdown "$RUNNER_TEMP/tree-knapsack-trace.md"
           test -s "$RUNNER_TEMP/tree-knapsack-trace.md"
+      - name: Generate reproducible DAG and cycle traces
+        run: |
+          python3 .agents/skills/cpp-lesson-pdf/scripts/trace_toposort.py \\
+            --markdown "$RUNNER_TEMP/toposort-trace.md" \\
+            --latex "$RUNNER_TEMP/toposort-tables.tex"
+          test -s "$RUNNER_TEMP/toposort-trace.md"
+          test -s "$RUNNER_TEMP/toposort-tables.tex"
