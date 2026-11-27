@@ -1,0 +1,64 @@
+{
+  "version": "2.3.0",
+  "profile": "comprehensive_teaching",
+  "resolution": {"width": 1920, "height": 1080, "fps": 30},
+  "layout": {
+    "subtitle_band_height": 132,
+    "subtitle_band_color": "0x101820",
+    "preserve_slide_aspect_ratio": true,
+    "countdown_right_margin": 52,
+    "countdown_bottom_margin": 27
+  },
+  "teacher_voice": {
+    "voice": "zh-CN-YunxiNeural",
+    "rate": "-12%",
+    "pitch": "+0Hz",
+    "volume": "+0%",
+    "pause_after_comma_ms": 260,
+    "pause_after_sentence_ms": 520,
+    "pause_after_question_ms": 700,
+    "pause_after_paragraph_ms": 850
+  },
+  "pacing": {
+    "knowledge_point_pause_seconds": 5,
+    "slide_end_pause_seconds": 5,
+    "thinking_seconds_by_difficulty": {"D1": 6, "D2": 8, "D3": 10, "D4": 15, "D5": 20},
+    "default_thinking_difficulty": "D3",
+    "pilot_slide_ids": [1, 20, 40, 60, 80]
+  },
+  "subtitle": {
+    "enabled": true,
+    "font_name": "Microsoft YaHei",
+    "font_size": 20,
+    "max_chars_per_line": 16,
+    "max_lines": 2,
+    "margin_vertical": 8,
+    "margin_right": 190,
+    "outline": 1,
+    "shadow": 0,
+    "color": "&H00FFFFFF",
+    "disable_during_thinking": true
+  },
+  "countdown": {
+    "enabled": true,
+    "mode": "numeric_only",
+    "font_size": 42,
+    "font_color": "0xF6C453",
+    "font_file": "C:/Windows/Fonts/msyh.ttc"
+  },
+  "focus": {
+    "enabled": true,
+    "knowledge_color": "0xFFC857@0.25",
+    "code_color": "0x42A5F5@0.24",
+    "algorithm_color": "0x66BB6A@0.24",
+    "border_color": "0xFFFFFF@0.90",
+    "border_width": 2,
+    "min_confidence": 0.45
+  },
+  "quality_control": {
+    "require_speech_timings": true,
+    "check_resolution": true,
+    "manual_pilot_review": true,
+    "never_auto_approve_full_course": true
+  }
+}
