@@ -1,8 +1,9 @@
-name: Validate interactive lesson video builder V2.3
+name: Validate and package interactive lesson video builder V2.3
 on:
   pull_request:
     paths:
       - "skills/interactive-lesson-video-builder/**"
+      - ".github/workflows/validate-interactive-lesson-video-builder-v2.3.yml"
   push:
     branches: [main]
     paths:
@@ -19,3 +20,13 @@ jobs:
         run: python -m compileall -q skills/interactive-lesson-video-builder/scripts
       - name: Run unit tests
         run: python -m unittest discover -s skills/interactive-lesson-video-builder/tests -v
+      - name: Package reusable Skill
+        run: |
+          cd skills
+          zip -r ../interactive-lesson-video-builder-v2.3.zip interactive-lesson-video-builder
+      - name: Upload Skill ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: interactive-lesson-video-builder-v2.3
+          path: interactive-lesson-video-builder-v2.3.zip
+          if-no-files-found: error
