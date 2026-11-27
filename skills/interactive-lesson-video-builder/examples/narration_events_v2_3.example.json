@@ -1,0 +1,33 @@
+{
+  "schema_version": "2.3.0",
+  "slides": [
+    {
+      "slide": 20,
+      "events": [
+        {
+          "event_id": "s020_e01",
+          "type": "narration",
+          "text": "线段树把连续区间逐层拆成左右两部分。",
+          "knowledge_point_end": true
+        },
+        {
+          "event_id": "s020_e02",
+          "type": "narration",
+          "text": "根节点表示一到八，左右孩子分别是一到四和五到八。"
+        },
+        {
+          "event_id": "s020_think01",
+          "type": "thinking_prompt",
+          "text": "根节点表示一到八时，左右孩子分别表示什么区间？中点应该怎样计算？",
+          "difficulty": "D4"
+        },
+        {
+          "event_id": "s020_reveal01",
+          "type": "reveal",
+          "text": "左孩子表示一到四，右孩子表示五到八，中点可以用左端点加右端点再除以二。"
+        }
+      ],
+      "slide_end_pause_seconds": 5
+    }
+  ]
+}
