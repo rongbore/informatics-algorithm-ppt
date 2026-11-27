@@ -1,0 +1,7 @@
+{
+  "_comment": "Optional teacher overrides. Keys may be event_id or slide number. Values may be D1-D5 or an object with difficulty and optional thinking_seconds.",
+  "s020_think01": "D4",
+  "s040_think01": "D3",
+  "s060_think01": "D4",
+  "s080_think01": "D5"
+}
