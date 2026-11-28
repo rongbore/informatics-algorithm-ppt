@@ -52,7 +52,7 @@ def read_srt(path):
 
 def validate_focus_report(report):
     require(
-        report.get("version") in ("2.4.0-alpha.3", "2.4.0-alpha.4"),
+        report.get("version") in ("2.4.0-alpha.3", "2.4.1-alpha.4"),
         "Unexpected V2.4 QA report version",
     )
     require(report.get("manual_review_required") is True, "Manual review must remain required")
