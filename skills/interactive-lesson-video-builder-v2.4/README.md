@@ -58,9 +58,8 @@ For DFS/BFS, union-find, DP, trees and graphs, animation is allowed only when a 
 ## Output
 
 - Full-course MP4 and merged SRT.
-- Readable narration script (`narration_script.txt`).
+- Readable narration script (`narration_script.txt`) and narration event JSON.
 - Measured speech/pause timeline (`measured_timeline.csv`).
-- Readable narration script and narration event JSON.
 - Storyboard JSON/CSV.
 - Per-phrase timing JSON/CSV and audio assets.
 - Source manifest, visual-region manifest and alignment audit.
