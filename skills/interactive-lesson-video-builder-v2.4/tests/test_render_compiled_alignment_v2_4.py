@@ -145,6 +145,7 @@ class CompiledRendererTests(unittest.TestCase):
         slide_map = {1: {"regions": [{"region_id": "s001_r01"}]}}
         storyboard = {
             "schema_version": "2.6.0",
+            "source_pptx_sha256": "source-hash",
             "slides": [{
                 "slide": 1,
                 "shots": [{
