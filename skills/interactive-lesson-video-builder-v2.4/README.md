@@ -62,19 +62,23 @@ Prepare build/v2_4/narration_events_v2_4.json with unique event IDs and exact te
 
 For all slides, add --all-slides after the pilot has been approved.
 
-## Step 4 — Plan and independently verify visual/speech alignment
+## Step 4 — Prepare a machine-hashed alignment context
 
-Use prompts/alignment_planner_v2_4.md with:
-- build/v2_4/regions.json
-- build/v2_4/narration_events_v2_4.json
-- audio_v2_4/timings/slide_NNN.json
-- the matching audio files and slide previews
+Do not ask the AI model to calculate cryptographic hashes. Generate a context bundle that contains the exact slide regions, measured phrases, and machine-computed source fingerprints:
 
-Then use prompts/alignment_verifier_v2_4.md as a separate second pass. Save the final verified JSON as build/v2_4/alignment_plan.json. The plan must contain the canonical region-manifest digest, narration digest, and exact SHA-256 hashes for each timing JSON and audio file.
+    python scripts/prepare_alignment_inputs_v2_4.py --regions build/v2_4/regions.json --narration build/v2_4/narration_events_v2_4.json --timings-dir audio_v2_4/timings --audio-dir audio_v2_4 --output build/v2_4/alignment_context.json
+
+## Step 5 — Plan and independently verify visual/speech alignment
+
+Use prompts/alignment_planner_v2_4.md with alignment_context.json and the matching slide previews. The planner returns alignment_decisions_draft.json. Then use prompts/alignment_verifier_v2_4.md as a separate second pass and save alignment_decisions_verified.json.
+
+Finalize the decisions by copying the hashes from the prepared context and checking phrase coverage:
+
+    python scripts/finalize_alignment_plan_v2_4.py --context build/v2_4/alignment_context.json --decisions build/v2_4/alignment_decisions_verified.json --output build/v2_4/alignment_plan.json
 
 Every measured speech phrase must be represented exactly once in the plan. Use matched, review_required, or unmatched. Do not force a visual target for transition phrases.
 
-## Step 5 — Compile and validate the three-way mapping
+## Step 6 — Compile and validate the three-way mapping
 
     python scripts/compile_alignment_v2_4.py --regions build/v2_4/regions.json --narration build/v2_4/narration_events_v2_4.json --alignment-plan build/v2_4/alignment_plan.json --timings-dir audio_v2_4/timings --audio-dir audio_v2_4 --output build/v2_4/compiled_alignment.json
 
@@ -89,13 +93,13 @@ This compiler verifies:
 
 A single phrase can highlight several distinct regions. Duplicate physical regions are consolidated. Unmatched and review-required phrases are recorded but not drawn.
 
-## Step 6 — Render from the compiled alignment
+## Step 7 — Render from the compiled alignment
 
     python scripts/render_lesson_v2_4.py --slides rendered/slides --audio audio_v2_4 --speech-timings audio_v2_4/timings --alignment-report build/v2_4/compiled_alignment.json --output video/v2_4_pilot.mp4 --qa qa_v2_4_pilot --ux-config config/video_ux_v2_4.json --subtitle-dir subtitles_v2_4_pilot --only-slides 1 20 40 60 80
 
 The renderer uses source-normalized bboxes and the exact phrase intervals from the compiled report. It does not recalculate timing from slide duration or narration length.
 
-## Step 7 — Validate the final media
+## Step 8 — Validate the final media
 
     python scripts/validate_full_video_v2_4.py --video video/v2_4_pilot.mp4 --qa-report qa_v2_4_pilot/qa_report_v2_4_alpha4.json --audio-dir audio_v2_4 --timings-dir audio_v2_4/timings --subtitle-dir subtitles_v2_4_pilot --output qa_v2_4_pilot/final_validation.json
 
