@@ -100,7 +100,12 @@ def main():
                     key=hashlib.sha256((a.provider+"|"+phrase).encode("utf-8")).hexdigest()
                     wav=cache/(key+".wav")
                     if not wav.exists():
-                        router.synthesize(phrase,wav)
+                        provider_info=router.synthesize(phrase,wav)
+                        wav.with_suffix(".provider.json").write_text(json.dumps(provider_info,ensure_ascii=False,indent=2),encoding="utf-8")
+                    else:
+                        sidecar=wav.with_suffix(".provider.json")
+                        provider_info=json.loads(sidecar.read_text(encoding="utf-8")) if sidecar.exists() else {"provider":"cached_provider_unknown"}
+                        report["provider_events"].append({"event":"phrase_cache_reused","provider":provider_info.get("provider","cached_provider_unknown"),"chars":len(phrase)})
                     measured=duration(wav,ffprobe)
                     row={"event_id":event_id,"phrase_index":phrase_index,"type":kind,"text":phrase,"start":round(cursor,3),"end":round(cursor+measured,3),"source_char_start":char_cursor,"source_char_end":char_cursor+len(re.sub(r"\s+","",phrase))}
                     event_phrases.append(row);phrase_rows.append(row);pieces.append(wav);cursor+=measured;char_cursor+=len(re.sub(r"\s+","",phrase))
