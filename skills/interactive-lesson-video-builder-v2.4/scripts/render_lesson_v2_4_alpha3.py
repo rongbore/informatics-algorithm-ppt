@@ -154,7 +154,8 @@ def main():
             clips.append(clip)
             rows.append({"slide":number,"duration_seconds":round(duration,2),"subtitle_cues":len(cues),
                          "thinking_intervals":len(countdowns),"thinking_seconds":round(sum(b-a for a,b in countdowns),2),
-                         "matched_focus_regions":matched,"unmatched_focus_regions":unmatched,\n                         "merged_duplicate_focus_regions":sum(1 for row in alignment if row.get("reason")=="merged_duplicate_geometry"),
+                         "matched_focus_regions":matched,"unmatched_focus_regions":unmatched,
+                         "merged_duplicate_focus_regions":sum(1 for row in alignment if row.get("reason")=="merged_duplicate_geometry"),
                          "coordinate_transform":{"scale":round(scale,6),"offset_x":round(offset_x,2),"offset_y":round(offset_y,2)},
                          "focus_timing_modes":[row["mode"] for row in alignment if row["intervals"]],"focus_alignment":alignment})
             print(f"Rendered slide {number}: {duration:.2f}s, {len(cues)} subtitle cues, {len(countdowns)} numeric countdowns")
