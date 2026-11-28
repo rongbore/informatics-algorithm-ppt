@@ -247,7 +247,7 @@ def camera_crop(plan, row, width, content_height, offset_x, offset_y,
     }
 
 
-def transform_box_for_crop(px, py, pw, ph, crop):
+def transform_box_for_crop(px, py, pw, ph, crop, width, content_height):
     """Transform and clip a focus rectangle into the cropped output canvas."""
     if crop is None:
         return px, py, pw, ph
@@ -261,7 +261,7 @@ def transform_box_for_crop(px, py, pw, ph, crop):
     y = int(round(top * crop["zoom_y"]))
     w = int(round((right - left) * crop["zoom_x"]))
     h = int(round((bottom - top) * crop["zoom_y"]))
-    return x, y, max(2, min(1920 - x, w)), max(2, min(948 - y, h))
+    return x, y, max(2, min(width - x, w)), max(2, min(content_height - y, h))
 
 
 def sha256_file(path):
@@ -437,18 +437,18 @@ def main():
                 py = max(0, min(content_height - 2, round(offset_y + y * scaled_height)))
                 pw = max(2, min(width - px, round(box_width * scaled_width)))
                 ph = max(2, min(content_height - py, round(box_height * scaled_height)))
-                transformed = transform_box_for_crop(px, py, pw, ph, crop)
+                intervals = region.get("intervals", [])
+                transformed = transform_box_for_crop(px, py, pw, ph, crop, width, content_height)
                 if transformed is None:
                     focus_rows.append({
                         "region_index": region_index,
                         "region_id": region["region_id"],
-                        "intervals": intervals if "intervals" in locals() else region.get("intervals", []),
+                        "intervals": intervals,
                         "reason": "outside_selected_closeup_crop",
                     })
                     continue
                 px, py, pw, ph = transformed
                 color = colors.get(region.get("kind"), colors["knowledge"])
-                intervals = region.get("intervals", [])
                 for interval in intervals:
                     start, end = float(interval["start"]), float(interval["end"])
                     enable = f"gte(t,{start:.3f})*lt(t,{end:.3f})"
