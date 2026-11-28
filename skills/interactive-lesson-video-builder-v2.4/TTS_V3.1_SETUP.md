@@ -26,7 +26,15 @@ $env:SHERPA_TTS_RULE_FSTS = "D:\AIModels\sherpa-onnx-vits-zh-aishell3\vits-icefa
 $env:SHERPA_TTS_SPEAKER_ID = "21"
 ```
 
-Review the upstream model and dataset license before redistribution or commercial use. The model is not bundled in this repository.
+The setup script also prints `SHERPA_TTS_RULE_FSTS` when the Chinese phone/date/number normalization files are present. Configure that value to improve reading of dates, numbers and phone-like sequences. The local adapter can auto-discover these three files beside `model.onnx` if the variable is omitted. Review the upstream model and dataset license before redistribution or commercial use. The model is not bundled in this repository.
+
+Run an offline-only smoke test (this script cannot call any cloud TTS service):
+
+```powershell
+python .\\scripts\\smoke_test_local_tts_v31.py --output .\\local_tts_v31_smoke.wav
+```
+
+A successful result prints `status: PASS`, sample rate, duration and file size. Listen to the WAV manually to assess voice suitability and pronunciation; a successful file-generation test does not certify naturalness.
 
 ## 3. Optional Tencent Cloud free-tier setup
 

@@ -24,6 +24,10 @@ class LocalSherpaTTS:
         tokens = _required_path("SHERPA_TTS_TOKENS")
         lexicon = os.getenv("SHERPA_TTS_LEXICON", "").strip()
         rules = os.getenv("SHERPA_TTS_RULE_FSTS", "").strip()
+        if not rules:
+            model_dir = Path(model).parent
+            discovered = [str(model_dir / name) for name in ("phone.fst", "date.fst", "number.fst") if (model_dir / name).is_file()]
+            rules = ",".join(discovered)
         sid = int(os.getenv("SHERPA_TTS_SPEAKER_ID", "21"))
         threads = max(1, int(os.getenv("SHERPA_TTS_THREADS", "2")))
         cfg = sherpa_onnx.OfflineTtsConfig(
