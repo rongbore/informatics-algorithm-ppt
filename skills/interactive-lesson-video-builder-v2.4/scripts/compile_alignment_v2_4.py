@@ -191,6 +191,15 @@ def compile_alignment(region_manifest, narration, plan, timing_dir, audio_dir,
             "Unsupported alignment plan schema")
     require(bool(str(plan.get("context_id", "")).strip()),
             "Alignment plan is missing its prepared context ID")
+    decision_payload = {
+        "schema_version": plan["schema_version"],
+        "context_id": plan["context_id"],
+        "slides": plan.get("slides", []),
+    }
+    require(
+        plan.get("decisions_sha256") == canonical_digest(decision_payload),
+        "Alignment decisions changed after finalization",
+    )
     require(
         plan.get("region_manifest_sha256") == canonical_digest(region_manifest),
         "Region manifest fingerprint mismatch",
