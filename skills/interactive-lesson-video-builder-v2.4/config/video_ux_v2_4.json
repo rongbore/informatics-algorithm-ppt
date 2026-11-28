@@ -1,12 +1,8 @@
 {
-  "version": "2.6.0",
+  "version": "2.4.0-alpha.3",
   "profile": "single_upload_full_course",
   "delivery_mode": "single_upload_full_course",
-  "resolution": {
-    "width": 1920,
-    "height": 1080,
-    "fps": 30
-  },
+  "resolution": {"width": 1920, "height": 1080, "fps": 30},
   "layout": {
     "subtitle_band_height": 132,
     "subtitle_band_color": "0x101820",
@@ -28,13 +24,7 @@
   "pacing": {
     "knowledge_point_pause_seconds": 5,
     "slide_end_pause_seconds": 3,
-    "thinking_seconds_by_difficulty": {
-      "D1": 6,
-      "D2": 8,
-      "D3": 10,
-      "D4": 15,
-      "D5": 20
-    },
+    "thinking_seconds_by_difficulty": {"D1": 6, "D2": 8, "D3": 10, "D4": 15, "D5": 20},
     "default_thinking_difficulty": "D3",
     "pilot_mode": "automatic_internal_gate",
     "pilot_selection": "content_aware_opening_concept_code_example_exercise_recap"
@@ -66,7 +56,7 @@
     "algorithm_color": "0x66BB6A@0.24",
     "border_color": "0xFFFFFF@0.90",
     "border_width": 2,
-    "min_confidence": 0.9
+    "min_confidence": 0.90
   },
   "quality_control": {
     "require_speech_timings": true,
