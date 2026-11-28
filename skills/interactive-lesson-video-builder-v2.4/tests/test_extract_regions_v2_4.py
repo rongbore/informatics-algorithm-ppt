@@ -82,6 +82,7 @@ class SlideRegionExtractionTests(unittest.TestCase):
                         "confidence": 0.96,
                         "verification": {
                             "status": "confirmed",
+                            "planner_pass": "vision-planner-pass",
                             "reviewer_pass": "independent-vision-review",
                         },
                     }],
