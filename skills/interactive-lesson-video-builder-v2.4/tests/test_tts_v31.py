@@ -1,5 +1,6 @@
-import importlib.util, json, os, pathlib, tempfile, unittest
+import importlib.util, json, os, pathlib, tempfile, unittest, sys
 ROOT=pathlib.Path(__file__).resolve().parents[1]/"scripts"
+sys.path.insert(0,str(ROOT))
 def load(name):
  spec=importlib.util.spec_from_file_location(name[:-3],ROOT/name);mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(mod);return mod
 tencent=load("tencent_tts_v31.py")
