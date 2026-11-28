@@ -69,7 +69,7 @@ class SourceDeckNarrationContractTests(unittest.TestCase):
 class TimingEscapingRegressionTests(unittest.TestCase):
  def test_azure_character_offsets_use_whitespace_regex(self):
   source=(ROOT/"generate_audio_azure_v30.py").read_text(encoding="utf-8")
-  self.assertIn(r"r'\\s+'",source)
+  self.assertIn(r"r'\s+'",source)
  def test_composed_subtitle_cues_contain_real_newline_escapes(self):
   source=(ROOT/"compose_full_course_v30.py").read_text(encoding="utf-8")
-  self.assertIn(r"f'{seq}\\n{stamp",source)
+  self.assertIn(r"f'{seq}\n{stamp",source)
