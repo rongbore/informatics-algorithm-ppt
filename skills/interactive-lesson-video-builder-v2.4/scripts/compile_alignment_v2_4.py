@@ -180,6 +180,8 @@ def compile_alignment(region_manifest, narration, plan, timing_dir, audio_dir,
             "Unsupported region manifest schema")
     require(plan.get("schema_version") == "2.4.1",
             "Unsupported alignment plan schema")
+    require(bool(str(plan.get("context_id", "")).strip()),
+            "Alignment plan is missing its prepared context ID")
     require(
         plan.get("region_manifest_sha256") == canonical_digest(region_manifest),
         "Region manifest fingerprint mismatch",
