@@ -274,5 +274,37 @@ class CompiledRendererTests(unittest.TestCase):
 
 
 
+
+    def test_phrase_camera_switches_only_on_verified_intervals(self):
+        events = [{"event_id": "e1", "phrase_index": 0, "start": 1, "end": 4},
+                  {"event_id": "e2", "phrase_index": 0, "start": 5, "end": 8},
+                  {"event_id": "e3", "phrase_index": 0, "start": 9, "end": 12}]
+        regions = [{"region_id": "a", "bbox": [.2,.3,.1,.1], "intervals": [events[0]]},
+                   {"region_id": "b", "bbox": [.7,.3,.1,.1], "intervals": [events[1]]}]
+        shots = [{"shot_id": rid, "shot_type": "close_up", "region_ids": [rid],
+                  "narration_event_ids": [eid], "render_status": "supported_by_current_renderer"}
+                 for rid,eid in [("a","e1"),("b","e2"),("a","e3")]]
+        row = {"speech_events": events, "regions": regions, "pauses": []}
+        timeline = renderer.compile_camera_timeline(
+            {"shots": shots}, row, 1920, 948, 0, 0, 1920, 948, 13)
+        self.assertEqual([(s["start"], s["end"], s["region_id"]) for s in timeline],
+                         [(1,4,"a"),(5,8,"b")])
+        self.assertIn("gte(on/30,5.000000)", renderer.camera_filter(timeline,1920,948,30))
+        row["pauses"] = [{"start": 5.5, "end": 6}]
+        timeline = renderer.compile_camera_timeline(
+            {"shots": shots}, row, 1920, 948, 0, 0, 1920, 948, 13)
+        self.assertEqual([s["region_id"] for s in timeline], ["a"])
+
+    def test_phrase_camera_falls_back_for_multiple_regions(self):
+        event = {"event_id": "e1", "phrase_index": 0, "start": 0, "end": 3}
+        row = {"speech_events": [event], "regions": [
+            {"region_id": rid, "bbox": [.2,.2,.1,.1], "intervals": [event]}
+            for rid in ["a","b"]]}
+        plan = {"shots": [{"shot_type":"close_up","region_ids":["a"],
+                           "narration_event_ids":["e1"],
+                           "render_status":"supported_by_current_renderer"}]}
+        self.assertEqual(renderer.compile_camera_timeline(
+            plan,row,1920,948,0,0,1920,948,3), [])
+
 if __name__ == "__main__":
     unittest.main()
