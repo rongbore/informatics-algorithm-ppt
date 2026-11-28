@@ -95,6 +95,8 @@ def expected_phrases(narration_slide):
 
 def validate_timing(narration_slide, timing, audio_duration):
     page = int(narration_slide["slide"])
+    require(timing.get("schema_version") == "2.4.1",
+            f"Slide {page}: timing schema must be 2.4.1; regenerate audio")
     require(int(timing["slide"]) == page, f"Slide {page}: timing file slide ID mismatch")
     recorded_duration = float(timing["duration_seconds"])
     require(
@@ -108,7 +110,8 @@ def validate_timing(narration_slide, timing, audio_duration):
     phrase_counts = {}
     for event in speech:
         event_id = str(event["event_id"])
-        phrase_index = int(event.get("phrase_index", phrase_counts.get(event_id, 0)))
+        require("phrase_index" in event, f"Slide {page}: phrase_index missing; regenerate V2.4.1 audio")
+        phrase_index = int(event["phrase_index"])
         phrase_counts[event_id] = phrase_index + 1
         actual.append({
             "event_id": event_id,
