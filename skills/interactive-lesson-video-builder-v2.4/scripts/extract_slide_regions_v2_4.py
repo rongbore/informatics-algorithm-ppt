@@ -55,7 +55,7 @@ def infer_kind(text):
     )
     if sum(bool(re.search(pattern, value)) for pattern in code_patterns) >= 2:
         return "code"
-    if __import__("re").search(r"(?:dp|f|g)\s*\[|状态转移|递推|拓扑序|邻接表|树形DP|区间查询", value, __import__("re").I):
+    if re.search(r"(?:dp|f|g)\s*\[|状态转移|递推|拓扑序|邻接表|树形DP|区间查询", value, re.I):
         return "algorithm"
     return "knowledge"
 
