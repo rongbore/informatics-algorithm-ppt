@@ -17,6 +17,7 @@ def context():
         "audio_sha256": {"1": "audio-sha"},
         "slides": [{
             "slide": 1,
+            "regions": [{"region_id": "s001_sh10"}],
             "phrases": [{
                 "event_id": "s001_e01",
                 "phrase_index": 0,
