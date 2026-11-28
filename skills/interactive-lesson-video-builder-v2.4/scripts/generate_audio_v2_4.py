@@ -222,7 +222,7 @@ async def main_async(args):
             run([ffmpeg, "-y", "-i", str(tmp_wav), "-codec:a", "libmp3lame", "-q:a", "3", str(destination)])
             tmp_wav.unlink(missing_ok=True)
             actual_duration = media_duration(ffprobe, destination)
-            timing = {"schema_version":"2.4.0", "slide":number, "duration_seconds":round(actual_duration,3),
+            timing = {"schema_version":"2.4.1", "slide":number, "duration_seconds":round(actual_duration,3),
                       "alignment_mode":"measured_phrase_boundaries", "speech_events":speech, "pauses":pauses,
                       "thinking_difficulty":difficulty_log,
                       "limitations":["Phrase-level measured timing; not word- or phoneme-level forced alignment."]}
