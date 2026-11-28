@@ -21,7 +21,7 @@ Do not calculate or edit any hashes. Copy context_id exactly into your output. A
 9. Never map to a region whose mapping_eligible is false.
 
 ## Independent verification
-After drafting, re-open the original slide preview and re-check each proposed mapping in a separate pass. Confirm the region identity, bbox, and semantic relationship. Use a reviewer_pass identifier distinct from the planner pass. Only mark confirmed when the relationship is clear.
+After drafting, re-open the original slide preview and re-check each proposed mapping in a separate pass. Confirm the region identity, bbox, and semantic relationship. Use a planner_pass identifier for the first pass and a reviewer_pass identifier distinct from it for the independent pass. Only mark confirmed when the relationship is clear.
 
 ## Evidence
 For each mapped region, provide:
@@ -48,6 +48,7 @@ Return JSON only:
       "confidence": 0.96,
       "verification": {
         "status": "confirmed",
+        "planner_pass": "planner-pass-1",
         "reviewer_pass": "independent-review-pass-1"
       },
       "evidence": [{
