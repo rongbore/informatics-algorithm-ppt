@@ -134,7 +134,7 @@ A single phrase can highlight several distinct regions. Duplicate physical regio
 
     python scripts/render_lesson_v2_4.py --slides rendered/slides --audio audio_v2_4 --speech-timings audio_v2_4/timings --alignment-report build/v2_4/compiled_alignment.json --output video/v2_4_pilot.mp4 --qa qa_v2_4_pilot --ux-config config/video_ux_v2_4.json --subtitle-dir subtitles_v2_4_pilot --only-slides 1 20 40 60 80
 
-The renderer uses source-normalized bboxes and the exact phrase intervals from the compiled report. It does not recalculate timing from slide duration or narration length.
+Before rendering, the renderer recomputes SHA-256 for every selected slide PNG, MP3 and timing JSON and compares them with the compiled report. Any replaced or mixed-source file stops the render. It then uses source-normalized bboxes and exact measured phrase intervals; it does not recalculate timing from slide duration or narration length.
 
 ## Step 8 — Validate the final media
 
