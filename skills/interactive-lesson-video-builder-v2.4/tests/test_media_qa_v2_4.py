@@ -70,7 +70,7 @@ class MediaQATests(unittest.TestCase):
         report["slides"][0]["focus_alignment"].append(
             {
                 "region_index": 2,
-                "intervals": [{"start": 1.1, "end": 1.5, "event_id": "a"}],
+                "intervals": [{"start": 0.2, "end": 0.8, "event_id": "a"}],
             }
         )
         with self.assertRaises(ValueError):
