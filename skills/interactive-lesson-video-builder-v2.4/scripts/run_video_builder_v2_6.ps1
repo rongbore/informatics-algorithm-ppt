@@ -5,7 +5,7 @@ param(
  [string]$NarrationJson,
  [string]$AlignmentDecisions,
  [string]$StoryboardJson,
- [ValidateSet("edge","azure")][string]$TtsProvider="edge",
+ [ValidateSet("tencent","local","edge","azure")][string]$TtsProvider="tencent",
  [ValidateSet("coach_excited","coach_balanced")][string]$AzureVoiceProfile="coach_excited"
 )
 $ErrorActionPreference="Stop"
@@ -51,9 +51,13 @@ $python=(Get-Command python -ErrorAction Stop).Source
 foreach($tool in @("ffmpeg","ffprobe","powershell")){if(-not(Get-Command $tool -ErrorAction SilentlyContinue)){throw "Install $tool and add it to PATH."}}
 if($TtsProvider -eq "azure"){
  & $python -c "import sys,pptx,PIL; assert sys.version_info >= (3,10)"
- if(-not $env:AZURE_SPEECH_KEY -or -not $env:AZURE_SPEECH_REGION){throw "Azure TTS selected but AZURE_SPEECH_KEY or AZURE_SPEECH_REGION is missing. Configure them as local environment variables or GitHub Actions Secrets; never commit keys."}
-}else{
+ if(-not $env:AZURE_SPEECH_KEY -or -not $env:AZURE_SPEECH_REGION){throw "Azure TTS selected but AZURE_SPEECH_KEY or AZURE_SPEECH_REGION is missing."}
+}elseif($TtsProvider -eq "edge"){
  & $python -c "import sys,pptx,edge_tts; assert sys.version_info >= (3,10)"
+}elseif($TtsProvider -eq "tencent"){
+ & $python -c "import sys,pptx,sherpa_onnx,soundfile; assert sys.version_info >= (3,10)"
+}elseif($TtsProvider -eq "local"){
+ & $python -c "import sys,pptx,sherpa_onnx,soundfile; assert sys.version_info >= (3,10)"
 }
 if($LASTEXITCODE -ne 0){throw ("Install dependencies: python -m pip install -r "+(Join-Path $Engine "requirements-v2.4.txt"))}
 NeedFile $Config "Video configuration"
@@ -73,7 +77,9 @@ if($Phase -eq "Prepare"){
   Run $python @((Join-Path $Scripts "build_dsu_v30_animations.py"),"--pptx",$PptxPath,"--out",$Animations) "Build four source-grounded DSU animation chapters"
   Copy-Item (Join-Path $Engine "prompts\\dsu_animation_narration_v30.json") (Join-Path $Build "dsu_animation_narration_v30.json") -Force
  }
- if($TtsProvider -eq "azure"){
+ if($TtsProvider -in @("tencent","local")){
+  $ttsArgs=@((Join-Path $Scripts "generate_audio_v31.py"),"--input",$Narration,"--output",$Audio,"--timings-output",$Timings,"--config",(Join-Path $Engine "config\\tts_v31.json"),"--all-slides","--provider",$TtsProvider)
+ }elseif($TtsProvider -eq "azure"){
   $ttsArgs=@((Join-Path $Scripts "generate_audio_azure_v30.py"),"--input",$Narration,"--output",$Audio,"--timings-output",$Timings,"--config",$Config,"--all-slides","--profile",$AzureVoiceProfile)
  }else{
   $ttsArgs=@((Join-Path $Scripts "generate_audio_v2_4.py"),"--input",$Narration,"--output",$Audio,"--timings-output",$Timings,"--config",$Config,"--all-slides")
@@ -143,11 +149,16 @@ Run $python @($validate,"--video",$fullVideo,"--qa-report",(Join-Path $fullQa "q
 $FinalVideo=$fullVideo
 $FinalSrt=Join-Path $Root "lesson_full.srt"
 if(Test-Path (Join-Path $Root "animations\\animation_manifest.json")){
- if($TtsProvider -ne "azure"){throw "This DSU deck requires Azure TTS for its measured animation narration cues. Select -TtsProvider azure."}
  $AnimationNarration=Join-Path $Build "dsu_animation_narration_v30.json"
  $AnimationAudio=Join-Path $Audio "animation";$AnimationTimings=Join-Path $AnimationAudio "timings";$AnimationChapters=Join-Path $Videos "algorithm_chapters"
  Mkdir $AnimationAudio;Mkdir $AnimationTimings;Mkdir $AnimationChapters
- Run $python @((Join-Path $Scripts "generate_audio_azure_v30.py"),"--input",$AnimationNarration,"--output",$AnimationAudio,"--timings-output",$AnimationTimings,"--config",$Config,"--all-slides","--profile",$AzureVoiceProfile) "Generate Azure narration for algorithm animation states"
+ if($TtsProvider -in @("tencent","local")){
+  Run $python @((Join-Path $Scripts "generate_audio_v31.py"),"--input",$AnimationNarration,"--output",$AnimationAudio,"--timings-output",$AnimationTimings,"--config",(Join-Path $Engine "config\\tts_v31.json"),"--all-slides","--provider",$TtsProvider) "Generate Tencent-first/local fallback narration for algorithm animation states"
+ }elseif($TtsProvider -eq "azure"){
+  Run $python @((Join-Path $Scripts "generate_audio_azure_v30.py"),"--input",$AnimationNarration,"--output",$AnimationAudio,"--timings-output",$AnimationTimings,"--config",$Config,"--all-slides","--profile",$AzureVoiceProfile) "Generate legacy Azure narration for algorithm animation states"
+ }else{
+  throw "DSU animation narration requires V3.1 Tencent/local TTS or explicitly selected legacy Azure TTS."
+ }
  Run $python @((Join-Path $Scripts "render_dsu_animation_chapters_v30.py"),"--manifest",(Join-Path $Root "animations\\animation_manifest.json"),"--narration",$AnimationNarration,"--timings-dir",$AnimationTimings,"--audio-dir",$AnimationAudio,"--out",$AnimationChapters) "Render speech-synchronized DSU animation chapters"
  $FinalVideo=Join-Path $Videos "lesson_full_with_animations.mp4"
  $FinalSrt=Join-Path $Root "lesson_full_with_animations.srt"
@@ -191,7 +202,18 @@ foreach($file in (Get-ChildItem $fullSubs -Filter "slide_*.srt" -File|Sort-Objec
 }
 $srt=Join-Path $Root "lesson_full.srt"
 [IO.File]::WriteAllText($srt,($merged -join ($nl+$nl))+$nl,[Text.UTF8Encoding]::new($false))
-$manifest=@{version="3.0.0-beta.1";status="COMPLETE";tts_provider=$TtsProvider;azure_voice_profile=if($TtsProvider -eq "azure"){$AzureVoiceProfile}else{$null};video=(Resolve-Path $FinalVideo).Path;subtitles=(Resolve-Path $FinalSrt).Path;storyboard="build/v2_6/storyboard.json";narration="narration_script.txt";timeline="measured_timeline.csv";narration_events="build/v2_6/narration_events.json";regions="build/v2_6/regions.json";qa=if($FinalVideo -ne $fullVideo){($FinalVideo+".qa.json")}else{"qa/full/validation.json"};algorithm_animation=(Test-Path (Join-Path $Root "animations/animation_manifest.json"));manual_review_required=$true;auto_approved=$false}
+$ttsReportPath=Join-Path $Audio "tts_v31_report.json"
+$ttsActualProviders=@()
+if($TtsProvider -in @("tencent","local")){
+ NeedFile $ttsReportPath "V3.1 TTS report"
+ $ttsReport=Get-Content $ttsReportPath -Raw -Encoding UTF8|ConvertFrom-Json
+ if($ttsReport.status -ne "COMPLETE"){throw "V3.1 TTS report is incomplete; refusing COMPLETE delivery manifest."}
+ $ttsActualProviders=@($ttsReport.actual_providers)
+}
+$animationTtsReport=Join-Path $Audio "animation\\tts_v31_report.json"
+$animationTtsProviders=@()
+if(Test-Path $animationTtsReport){$animationTtsData=Get-Content $animationTtsReport -Raw -Encoding UTF8|ConvertFrom-Json;$animationTtsProviders=@($animationTtsData.actual_providers)}
+$manifest=@{version="3.1.0";status="COMPLETE";tts_provider_requested=$TtsProvider;tts_actual_providers=$ttsActualProviders;animation_tts_actual_providers=$animationTtsProviders;tts_report=if($TtsProvider -in @("tencent","local")){"audio/tts_v31_report.json"}else{$null};azure_voice_profile=if($TtsProvider -eq "azure"){$AzureVoiceProfile}else{$null};video=(Resolve-Path $FinalVideo).Path;subtitles=(Resolve-Path $FinalSrt).Path;storyboard="build/v2_6/storyboard.json";narration="narration_script.txt";timeline="measured_timeline.csv";narration_events="build/v2_6/narration_events.json";regions="build/v2_6/regions.json";qa=if($FinalVideo -ne $fullVideo){($FinalVideo+".qa.json")}else{"qa/full/validation.json"};algorithm_animation=(Test-Path (Join-Path $Root "animations/animation_manifest.json"));manual_review_required=$true;auto_approved=$false}
 $manifest|ConvertTo-Json -Depth 5|Set-Content (Join-Path $Root "delivery_manifest.json") -Encoding UTF8
 $zip=Join-Path $Root "lesson_video_production_package.zip"
 if(Test-Path $zip){Remove-Item $zip -Force}
