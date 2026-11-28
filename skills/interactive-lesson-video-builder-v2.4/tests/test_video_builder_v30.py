@@ -65,3 +65,13 @@ class SourceDeckNarrationContractTests(unittest.TestCase):
   script=(ROOT/"generate_audio_azure_v30.py").read_text(encoding="utf-8")
   self.assertIn("'phrases':event_phrases",script)
   self.assertIn("'speech_events':speech,'phrases':phrase_rows",script)
+
+class TimingEscapingRegressionTests(unittest.TestCase):
+ def test_azure_character_offsets_use_whitespace_regex(self):
+  source=(ROOT/"generate_audio_azure_v30.py").read_text(encoding="utf-8")
+  self.assertIn("re.sub(r'\\\\s+','',phrase)",source)
+  self.assertNotIn("re.sub(r'\\\\\\\\s+','',phrase)",source)
+ def test_composed_subtitle_cues_contain_real_newline_escapes(self):
+  source=(ROOT/"compose_full_course_v30.py").read_text(encoding="utf-8")
+  self.assertIn("f'{seq}\\\\n{stamp",source)
+  self.assertNotIn("f'{seq}\\\\\\\\n{stamp",source)
