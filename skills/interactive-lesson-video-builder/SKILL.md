@@ -1,6 +1,6 @@
 ---
 name: interactive-lesson-video-builder
-version: 2.6.0-alpha.2
+version: 2.7.0-alpha.1
 description: Single-upload, full-course AI teaching-video production. Automatically inspects PPTX, writes narration, plans scenes, synthesizes speech, aligns verified visual regions to measured audio time, renders MP4 and reports QA.
 ---
 

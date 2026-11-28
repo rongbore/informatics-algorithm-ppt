@@ -110,13 +110,13 @@ $pilotCompiled=Join-Path $Build "compiled_alignment_pilot.json"
 $pilotCompileArgs=@($compile,"--regions",$Regions,"--narration",$Narration,"--alignment-plan",$Plan,"--timings-dir",$Timings,"--audio-dir",$Audio,"--output",$pilotCompiled,"--slides")+$pilot
 Run $python $pilotCompileArgs "Compile representative pilot"
 $pilotVideo=Join-Path $Videos "pilot_internal.mp4";$pilotSubs=Join-Path $Subtitles "pilot";Mkdir $pilotSubs
-$pilotRenderArgs=@($render,"--slides",$Slides,"--audio",$Audio,"--speech-timings",$Timings,"--alignment-report",$pilotCompiled,"--output",$pilotVideo,"--qa",(Join-Path $Qa "pilot"),"--ux-config",$Config,"--subtitle-dir",$pilotSubs,"--font-file",$Font,"--only-slides")+$pilot
+$pilotRenderArgs=@($render,"--slides",$Slides,"--audio",$Audio,"--speech-timings",$Timings,"--alignment-report",$pilotCompiled,"--output",$pilotVideo,"--qa",(Join-Path $Qa "pilot"),"--ux-config",$Config,"--subtitle-dir",$pilotSubs,"--font-file",$Font,"--storyboard",(Join-Path $Build "storyboard.json"),"--only-slides")+$pilot
 Run $python $pilotRenderArgs "Render internal pilot"
 $pilotReport=Join-Path (Join-Path $Qa "pilot") "qa_report_v2_4_alpha4.json"
 Run $python @($validate,"--video",$pilotVideo,"--qa-report",$pilotReport,"--audio-dir",$Audio,"--timings-dir",$Timings,"--subtitle-dir",$pilotSubs,"--output",(Join-Path (Join-Path $Qa "pilot") "validation.json")) "Validate internal pilot"
 
 $fullVideo=Join-Path $Videos "lesson_full.mp4";$fullSubs=Join-Path $Subtitles "full";Mkdir $fullSubs
-Run $python @($render,"--slides",$Slides,"--audio",$Audio,"--speech-timings",$Timings,"--alignment-report",$Compiled,"--output",$fullVideo,"--qa",(Join-Path $Qa "full"),"--ux-config",$Config,"--subtitle-dir",$fullSubs,"--font-file",$Font) "Render full course"
+Run $python @($render,"--slides",$Slides,"--audio",$Audio,"--speech-timings",$Timings,"--alignment-report",$Compiled,"--output",$fullVideo,"--qa",(Join-Path $Qa "full"),"--ux-config",$Config,"--subtitle-dir",$fullSubs,"--font-file",$Font,"--storyboard",(Join-Path $Build "storyboard.json")) "Render full course"
 $fullQa=Join-Path $Qa "full"
 Run $python @($validate,"--video",$fullVideo,"--qa-report",(Join-Path $fullQa "qa_report_v2_4_alpha4.json"),"--audio-dir",$Audio,"--timings-dir",$Timings,"--subtitle-dir",$fullSubs,"--output",(Join-Path $fullQa "validation.json")) "Validate full course"
 

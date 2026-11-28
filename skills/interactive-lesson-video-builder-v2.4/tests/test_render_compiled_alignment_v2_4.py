@@ -115,5 +115,164 @@ class CompiledRendererTests(unittest.TestCase):
                 )
 
 
+    def test_storyboard_rejects_unknown_region_ids(self):
+        import json
+        import tempfile
+
+        slide_map = {1: {"regions": [{"region_id": "s001_r01"}]}}
+        storyboard = {
+            "schema_version": "2.6.0",
+            "source_pptx_sha256": "source-hash",
+            "slides": [{
+                "slide": 1,
+                "shots": [{
+                    "shot_type": "close_up",
+                    "region_ids": ["s001_missing"],
+                    "camera_motion": "none",
+                }],
+            }],
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "storyboard.json"
+            path.write_text(json.dumps(storyboard), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "unknown regions"):
+                renderer.load_storyboard(path, slide_map)
+
+    def test_storyboard_closeup_uses_verified_region_geometry(self):
+        import json
+        import tempfile
+
+        slide_map = {1: {"regions": [{"region_id": "s001_r01"}]}}
+        storyboard = {
+            "schema_version": "2.6.0",
+            "source_pptx_sha256": "source-hash",
+            "slides": [{
+                "slide": 1,
+                "shots": [{
+                    "shot_type": "close_up",
+                    "region_ids": ["s001_r01"],
+                    "camera_motion": "none",
+                    "render_status": "supported_by_current_renderer",
+                }],
+            }],
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "storyboard.json"
+            path.write_text(json.dumps(storyboard), encoding="utf-8")
+            plans = renderer.load_storyboard(path, slide_map)
+        row = {"regions": [{
+            "region_id": "s001_r01",
+            "bbox": [0.40, 0.35, 0.20, 0.12],
+        }]}
+        crop = renderer.camera_crop(plans[1], row, 1920, 948, 0, 0, 1920, 948)
+        self.assertIsNotNone(crop)
+        self.assertEqual(crop["region_id"], "s001_r01")
+        self.assertGreater(crop["zoom_x"], 1.0)
+        self.assertLessEqual(crop["x"] + crop["width"], 1920)
+        self.assertLessEqual(crop["y"] + crop["height"], 948)
+
+    def test_focus_box_is_transformed_into_closeup_crop(self):
+        crop = {
+            "x": 400, "y": 200, "width": 1200, "height": 600,
+            "zoom_x": 1.6, "zoom_y": 1.58,
+        }
+        transformed = renderer.transform_box_for_crop(
+            500, 250, 200, 100, crop, 1920, 948
+        )
+        self.assertEqual(transformed, (160, 79, 320, 158))
+        outside = renderer.transform_box_for_crop(
+            10, 10, 50, 50, crop, 1920, 948
+        )
+        self.assertIsNone(outside)
+
+    def test_storyboard_rejects_duplicate_slide_entries(self):
+        import json
+        import tempfile
+
+        storyboard = {
+            "schema_version": "2.6.0",
+            "source_pptx_sha256": "source-hash",
+            "slides": [
+                {"slide": 1, "shots": [{"shot_type": "establishing", "region_ids": []}]},
+                {"slide": 1, "shots": [{"shot_type": "establishing", "region_ids": []}]},
+            ],
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "storyboard.json"
+            path.write_text(json.dumps(storyboard), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "duplicate slide"):
+                renderer.load_storyboard(path, {1: {"regions": []}})
+
+
+
+    def test_storyboard_rejects_stale_source_fingerprint(self):
+        import json
+        import tempfile
+
+        storyboard = {
+            "schema_version": "2.6.0",
+            "source_pptx_sha256": "different-source",
+            "slides": [{
+                "slide": 1,
+                "shots": [{
+                    "shot_type": "establishing",
+                    "region_ids": [],
+                    "camera_motion": "none",
+                }],
+            }],
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "storyboard.json"
+            path.write_text(json.dumps(storyboard), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "fingerprint"):
+                renderer.load_storyboard(path, {1: {"regions": []}}, "expected-source")
+
+    def test_storyboard_must_cover_every_source_slide(self):
+        import json
+        import tempfile
+
+        storyboard = {
+            "schema_version": "2.6.0",
+            "source_pptx_sha256": "source-hash",
+            "slides": [{
+                "slide": 1,
+                "shots": [{
+                    "shot_type": "establishing",
+                    "region_ids": [],
+                    "camera_motion": "none",
+                }],
+            }],
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "storyboard.json"
+            path.write_text(json.dumps(storyboard), encoding="utf-8")
+            slide_map = {1: {"regions": []}, 2: {"regions": []}}
+            with self.assertRaisesRegex(ValueError, "does not cover every rendered source slide"):
+                renderer.load_storyboard(path, slide_map)
+
+
+
+    def test_storyboard_supports_content_aware_pilot_subset(self):
+        import json
+        import tempfile
+
+        storyboard = {
+            "schema_version": "2.6.0",
+            "source_pptx_sha256": "source-hash",
+            "slides": [
+                {"slide": 1, "shots": [{"shot_type": "establishing", "region_ids": []}]},
+                {"slide": 2, "shots": [{"shot_type": "close_up", "region_ids": ["s002_r01"]}]},
+            ],
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "storyboard.json"
+            path.write_text(json.dumps(storyboard), encoding="utf-8")
+            plans = renderer.load_storyboard(
+                path, {1: {"regions": []}}, "source-hash", {1}
+            )
+        self.assertEqual(set(plans), {1})
+
+
+
 if __name__ == "__main__":
     unittest.main()
