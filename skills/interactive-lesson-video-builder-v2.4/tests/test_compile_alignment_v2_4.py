@@ -169,6 +169,24 @@ class AlignmentCompilerTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 self.compile(tuple(data))
 
+    def test_audio_hash_mismatch_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            data = list(fixture(directory))
+            data[2]["audio_sha256"]["1"] = "stale-audio"
+            with self.assertRaises(ValueError):
+                self.compile(tuple(data))
+
+    def test_missing_phrase_index_requires_regenerated_audio(self):
+        with tempfile.TemporaryDirectory() as directory:
+            data = list(fixture(directory))
+            timing_path = data[3] / "slide_001.json"
+            timing = json.loads(timing_path.read_text(encoding="utf-8"))
+            del timing["speech_events"][0]["phrase_index"]
+            timing_path.write_text(json.dumps(timing, ensure_ascii=False), encoding="utf-8")
+            data[2]["timing_sha256"]["1"] = compiler.sha256_file(timing_path)
+            with self.assertRaises(ValueError):
+                self.compile(tuple(data))
+
     def test_unverified_mapping_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             data = list(fixture(directory))
