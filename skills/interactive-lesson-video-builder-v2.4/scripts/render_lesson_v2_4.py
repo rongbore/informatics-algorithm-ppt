@@ -150,17 +150,28 @@ def validate_alignment_report(report):
 
 
 
-def load_storyboard(path, slide_map):
-    """Load source-grounded shot plans and reject unknown slides/regions."""
+def load_storyboard(path, slide_map, expected_source_hash=None):
+    """Load source-grounded shot plans and reject stale or unknown references."""
     if not path:
         return {}
     storyboard = json.loads(Path(path).read_text(encoding="utf-8-sig"))
     if storyboard.get("schema_version") != "2.6.0":
         raise ValueError("Unsupported storyboard schema")
+    actual_source_hash = storyboard.get("source_pptx_sha256")
+    if not actual_source_hash or (
+        expected_source_hash and actual_source_hash != expected_source_hash
+    ):
+        raise ValueError("Storyboard PPTX fingerprint is missing or does not match alignment source")
     rows = storyboard.get("slides")
     if not isinstance(rows, list):
         raise ValueError("Storyboard slides must be a list")
     plans = {}
+    allowed_shots = {
+        "establishing", "medium", "close_up", "extreme_close_up",
+        "split_comparison", "process_reveal", "recap",
+    }
+    allowed_motion = {"none", "slow_push_in", "slow_pan"}
+    allowed_transitions = {"cut", "short_dissolve", "none"}
     for row in rows:
         page = int(row["slide"])
         if page not in slide_map or page in plans:
@@ -168,16 +179,22 @@ def load_storyboard(path, slide_map):
         shots = row.get("shots") or []
         if not shots:
             raise ValueError(f"Storyboard slide {page} contains no shots")
-        shot = shots[0]
         known_regions = {
             region["region_id"] for region in slide_map[page].get("regions", [])
         }
-        region_ids = shot.get("region_ids", [])
-        unknown = set(region_ids) - known_regions
-        if unknown:
-            raise ValueError(
-                f"Storyboard slide {page} references unknown regions: {sorted(unknown)}"
-            )
+        for candidate in shots:
+            unknown = set(candidate.get("region_ids", [])) - known_regions
+            if unknown:
+                raise ValueError(
+                    f"Storyboard slide {page} references unknown regions: {sorted(unknown)}"
+                )
+            if candidate.get("shot_type") not in allowed_shots:
+                raise ValueError(f"Storyboard slide {page} has unsupported shot type")
+            if candidate.get("camera_motion", "none") not in allowed_motion:
+                raise ValueError(f"Storyboard slide {page} has unsupported camera motion")
+            if candidate.get("transition_in", "cut") not in allowed_transitions:
+                raise ValueError(f"Storyboard slide {page} has unsupported transition")
+        shot = shots[0]
         if shot.get("render_status") == "review_required":
             shot = dict(shot)
             shot["camera_motion"] = "none"
@@ -187,8 +204,10 @@ def load_storyboard(path, slide_map):
             "shot_count": len(shots),
             "selected_region_id": next(iter(shot.get("region_ids", [])), None),
         }
+    if set(plans) != set(slide_map):
+        missing = sorted(set(slide_map) - set(plans))
+        raise ValueError(f"Storyboard does not cover every source slide: {missing}")
     return plans
-
 
 def camera_crop(plan, row, width, content_height, offset_x, offset_y,
                 scaled_width, scaled_height):
@@ -330,7 +349,10 @@ def main():
     config = json.loads(Path(args.ux_config).read_text(encoding="utf-8-sig"))
     alignment_report = json.loads(Path(args.alignment_report).read_text(encoding="utf-8-sig"))
     slide_map = validate_alignment_report(alignment_report)
-    storyboard = load_storyboard(args.storyboard, slide_map)
+    storyboard = load_storyboard(
+        args.storyboard, slide_map,
+        alignment_report.get("source_fingerprints", {}).get("source_pptx_sha256"),
+    )
     selected = set(args.only_slides or [])
     if selected and not selected <= set(slide_map):
         raise SystemExit("Requested slide is absent from compiled alignment")
