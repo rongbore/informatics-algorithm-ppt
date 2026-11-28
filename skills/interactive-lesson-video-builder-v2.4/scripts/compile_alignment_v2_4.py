@@ -172,6 +172,15 @@ def validate_region(region, page):
             f"Slide {page}: region {region.get('region_id')} is not verified for mapping")
     require(region.get("geometry_status") in ("source_verified", "vision_confirmed"),
             f"Slide {page}: region {region.get('region_id')} has unverified geometry")
+    if region.get("geometry_source") == "vision_model":
+        verification = region.get("verification", {})
+        planner_pass = str(verification.get("planner_pass", "")).strip()
+        reviewer_pass = str(verification.get("reviewer_pass", "")).strip()
+        require(
+            verification.get("status") == "confirmed"
+            and planner_pass and reviewer_pass and planner_pass != reviewer_pass,
+            f"Slide {page}: vision geometry lacks a distinct independent verification pass",
+        )
 
 
 def compile_alignment(region_manifest, narration, plan, timing_dir, audio_dir,
@@ -306,8 +315,11 @@ def compile_alignment(region_manifest, narration, plan, timing_dir, audio_dir,
                 verification = mapping.get("verification", {})
                 require(
                     verification.get("status") == "confirmed"
-                    and str(verification.get("reviewer_pass", "")).strip(),
-                    f"Slide {page}: matched mapping lacks independent verification",
+                    and str(verification.get("planner_pass", "")).strip()
+                    and str(verification.get("reviewer_pass", "")).strip()
+                    and str(verification.get("planner_pass", "")).strip()
+                        != str(verification.get("reviewer_pass", "")).strip(),
+                    f"Slide {page}: matched mapping lacks distinct planner and verifier passes",
                 )
                 evidence_rows = mapping.get("evidence", [])
                 evidence_by_region = {x.get("region_id"): x for x in evidence_rows}
