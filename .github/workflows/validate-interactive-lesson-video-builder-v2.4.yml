@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - "feature/interactive-lesson-video-builder-v2.4*"
+      - "feature/video-builder-v3.0*"
     paths:
       - "skills/interactive-lesson-video-builder-v2.4/**"
       - "skills/interactive-lesson-video-builder/SKILL.md"
