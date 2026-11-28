@@ -65,6 +65,24 @@ For DFS/BFS, union-find, DP, trees and graphs, animation is allowed only when a 
 - Machine QA report and human review checklist.
 - One ZIP containing the complete production package.
 
+## One-command production runner
+
+The user uploads one PPTX. The Skill agent internally authors narration, storyboard and verified alignment decisions, then invokes the PowerShell runner twice inside the same orchestration request:
+
+**Prepare phase** (agent-authored narration JSON is an internal artifact):
+
+    powershell -ExecutionPolicy Bypass -File scripts/run_video_builder_v2_6.ps1 -Phase Prepare -Pptx input/lesson.pptx -OutputDir output/lesson -NarrationJson output/lesson/narration_events.json
+
+The Prepare phase exports every slide with PowerPoint, extracts native regions, synthesizes per-phrase TTS, measures timing and creates the machine-hashed alignment context. The Skill agent then reads that context and slide previews, performs planner/verifier passes, and writes alignment decisions plus storyboard JSON.
+
+**Render phase** (all JSON paths are generated internally by the Skill agent):
+
+    powershell -ExecutionPolicy Bypass -File scripts/run_video_builder_v2_6.ps1 -Phase Render -Pptx input/lesson.pptx -OutputDir output/lesson -AlignmentDecisions output/lesson/alignment_decisions_verified.json -StoryboardJson output/lesson/storyboard.json
+
+The Render phase compiles the alignment, renders and validates a content-aware internal pilot, renders the full deck, validates the final MP4, merges SRT captions and creates `lesson_video_production_package.zip`. The two phases are invisible implementation details; the user is not asked to perform them.
+
+**Important:** The current renderer outputs the original slide with verified focus overlays, subtitles and numeric thinking countdowns. Camera moves described in the storyboard are not automatically present in the MP4 unless a future renderer implements them. Dynamic algorithm simulations require a validated state trace. Never promise unsupported effects.
+
 ## Engine commands and implementation
 
 The validated scripts and detailed engine command reference remain in this directory:
@@ -76,5 +94,7 @@ The validated scripts and detailed engine command reference remain in this direc
 - `scripts/compile_alignment_v2_4.py`
 - `scripts/render_lesson_v2_4.py`
 - `scripts/validate_full_video_v2_4.py`
+- `scripts/run_video_builder_v2_6.ps1`
+- `prompts/storyboard_compiler_v2_6.md`
 
 The Skill agent orchestrates the semantic planning and verification steps between these deterministic tools. V2.2/V2.3 remain untouched.
