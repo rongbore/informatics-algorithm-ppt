@@ -334,7 +334,7 @@ def main():
         "-show_entries", "stream=width,height,avg_frame_rate", "-of", "json", str(output)
     ]))["streams"][0]
     qa_report = {
-        "version": "2.4.0-alpha.4",
+        "version": "2.4.1-alpha.4",
         "slide_count": len(rendered_rows),
         "total_duration_seconds": round(sum(row["duration_seconds"] for row in rendered_rows), 3),
         "resolution": f"{metadata['width']}x{metadata['height']}",
