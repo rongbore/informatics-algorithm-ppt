@@ -42,6 +42,22 @@ def bbox_normalized(left, top, width, height, slide_width, slide_height):
             round(min(h, 1.0 - max(0.0, y)), 7)]
 
 
+
+def infer_kind(text):
+    value = clean_text(text)
+    if not value:
+        return "knowledge"
+    code_patterns = (
+        r"#include\s*<", r"\busing\s+namespace\b", r"\bint\s+main\s*\(",
+        r"\b(?:cout|cin|printf|scanf)\b", r"\b(?:for|while|if|return)\s*[\(;]",
+        r"\bvector\s*<", r"[{};]",
+    )
+    if sum(bool(__import__("re").search(pattern, value)) for pattern in code_patterns) >= 2:
+        return "code"
+    if __import__("re").search(r"(?:dp|f|g)\s*\[|状态转移|递推|拓扑序|邻接表|树形DP|区间查询", value, __import__("re").I):
+        return "algorithm"
+    return "knowledge"
+
 def shape_type_name(shape):
     value = getattr(shape, "shape_type", None)
     return getattr(value, "name", str(value))
@@ -114,6 +130,7 @@ def extract_regions(pptx_path, slides_dir=None, vision_plan_path=None):
                                 "TABLE_CELL", cell_text, cell_bbox,
                                 extra={"row_index": row_index, "column_index": col_index}
                             )
+                            regions[-1]["kind"] = infer_kind(cell_text)
                         x += int(table.columns[col_index].width)
                     y += int(row.height)
                 continue
@@ -124,6 +141,7 @@ def extract_regions(pptx_path, slides_dir=None, vision_plan_path=None):
                     regions, slide_number, f"s{slide_number:03d}_sh{shape_id}",
                     shape_id, name, shape_type, text, bbox
                 )
+                regions[-1]["kind"] = infer_kind(text)
             else:
                 # Preserve geometry for diagrams/images. A model must inspect the
                 # rendered slide and create a hash-bound visual-region proposal.
@@ -203,6 +221,7 @@ def extract_regions(pptx_path, slides_dir=None, vision_plan_path=None):
                         "verification": verification,
                     },
                 )
+                slide_index[number]["regions"][-1]["kind"] = proposal.get("kind", "knowledge")
 
     return manifest
 
