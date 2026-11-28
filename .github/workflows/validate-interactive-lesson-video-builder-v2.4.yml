@@ -1,0 +1,33 @@
+name: Validate Interactive Lesson Video Builder V2.4
+
+on:
+  push:
+    branches:
+      - feature/interactive-lesson-video-builder-v2.4
+    paths:
+      - "skills/interactive-lesson-video-builder-v2.4/**"
+      - ".github/workflows/validate-interactive-lesson-video-builder-v2.4.yml"
+  pull_request:
+    paths:
+      - "skills/interactive-lesson-video-builder-v2.4/**"
+      - ".github/workflows/validate-interactive-lesson-video-builder-v2.4.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile Python modules
+        run: python -m compileall -q skills/interactive-lesson-video-builder-v2.4/scripts skills/interactive-lesson-video-builder-v2.4/tests
+      - name: Run unit tests
+        working-directory: skills/interactive-lesson-video-builder-v2.4
+        run: python -m unittest discover -s tests -v
