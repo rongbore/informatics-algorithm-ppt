@@ -4,7 +4,9 @@ param(
  [string]$OutputDir=".\lesson_video_output",
  [string]$NarrationJson,
  [string]$AlignmentDecisions,
- [string]$StoryboardJson
+ [string]$StoryboardJson,
+ [ValidateSet("edge","azure")][string]$TtsProvider="edge",
+ [ValidateSet("coach_excited","coach_balanced")][string]$AzureVoiceProfile="coach_excited"
 )
 $ErrorActionPreference="Stop"
 $Engine=Split-Path -Parent $PSScriptRoot
@@ -47,7 +49,12 @@ function Run($exe,[string[]]$Arguments,$label){
 foreach($p in @($Slides,$Build,$Audio,$Timings,$Subtitles,$Videos,$Qa)){Mkdir $p}
 $python=(Get-Command python -ErrorAction Stop).Source
 foreach($tool in @("ffmpeg","ffprobe","powershell")){if(-not(Get-Command $tool -ErrorAction SilentlyContinue)){throw "Install $tool and add it to PATH."}}
-& $python -c "import sys,pptx,edge_tts; assert sys.version_info >= (3,10)"
+if($TtsProvider -eq "azure"){
+ & $python -c "import sys,pptx,PIL; assert sys.version_info >= (3,10)"
+ if(-not $env:AZURE_SPEECH_KEY -or -not $env:AZURE_SPEECH_REGION){throw "Azure TTS selected but AZURE_SPEECH_KEY or AZURE_SPEECH_REGION is missing. Configure them as local environment variables or GitHub Actions Secrets; never commit keys."}
+}else{
+ & $python -c "import sys,pptx,edge_tts; assert sys.version_info >= (3,10)"
+}
 if($LASTEXITCODE -ne 0){throw ("Install dependencies: python -m pip install -r "+(Join-Path $Engine "requirements-v2.4.txt"))}
 NeedFile $Config "Video configuration"
 
@@ -58,7 +65,20 @@ if($Phase -eq "Prepare"){
  Copy-Item (Resolve-Path $NarrationJson).Path $Narration -Force
  Run "powershell.exe" @("-NoProfile","-ExecutionPolicy","Bypass","-File",(Join-Path $Scripts "render_slides_v2_4.ps1"),"-Pptx",$PptxPath,"-OutputDir",$Slides) "Export PowerPoint slides"
  Run $python @((Join-Path $Scripts "extract_slide_regions_v2_4.py"),"--pptx",$PptxPath,"--slides-dir",$Slides,"--output",$Regions) "Extract slide regions"
- Run $python @((Join-Path $Scripts "generate_audio_v2_4.py"),"--input",$Narration,"--output",$Audio,"--timings-output",$Timings,"--config",$Config,"--all-slides") "Generate neural TTS and measured timings"
+ $detectJson=& $python (Join-Path $Scripts "detect_dsu_deck_v30.py") --pptx $PptxPath
+ if($LASTEXITCODE -ne 0){throw "DSU deck detection failed"}
+ $detected=$detectJson|ConvertFrom-Json
+ if($detected.family -eq "dsu"){
+  $Animations=Join-Path $Root "animations"
+  Run $python @((Join-Path $Scripts "build_dsu_v30_animations.py"),"--pptx",$PptxPath,"--out",$Animations) "Build four source-grounded DSU animation chapters"
+  Copy-Item (Join-Path $Engine "prompts\\dsu_animation_narration_v30.json") (Join-Path $Build "dsu_animation_narration_v30.json") -Force
+ }
+ if($TtsProvider -eq "azure"){
+  $ttsArgs=@((Join-Path $Scripts "generate_audio_azure_v30.py"),"--input",$Narration,"--output",$Audio,"--timings-output",$Timings,"--config",$Config,"--all-slides","--profile",$AzureVoiceProfile)
+ }else{
+  $ttsArgs=@((Join-Path $Scripts "generate_audio_v2_4.py"),"--input",$Narration,"--output",$Audio,"--timings-output",$Timings,"--config",$Config,"--all-slides")
+ }
+ Run $python $ttsArgs "Generate $TtsProvider neural TTS and measured timings"
  Run $python @((Join-Path $Scripts "prepare_alignment_inputs_v2_4.py"),"--regions",$Regions,"--narration",$Narration,"--timings-dir",$Timings,"--audio-dir",$Audio,"--output",$Context) "Prepare machine-hashed alignment context"
  Write-Host "PREPARE COMPLETE. Skill agent must now create verified alignment decisions and storyboard JSON from the context and slide previews." -ForegroundColor Green
  Write-Host ("Context: "+$Context)
@@ -120,6 +140,20 @@ Run $python @($render,"--slides",$Slides,"--audio",$Audio,"--speech-timings",$Ti
 $fullQa=Join-Path $Qa "full"
 Run $python @($validate,"--video",$fullVideo,"--qa-report",(Join-Path $fullQa "qa_report_v2_4_alpha4.json"),"--audio-dir",$Audio,"--timings-dir",$Timings,"--subtitle-dir",$fullSubs,"--output",(Join-Path $fullQa "validation.json")) "Validate full course"
 
+$FinalVideo=$fullVideo
+$FinalSrt=Join-Path $Root "lesson_full.srt"
+if(Test-Path (Join-Path $Root "animations\\animation_manifest.json")){
+ if($TtsProvider -ne "azure"){throw "This DSU deck requires Azure TTS for its measured animation narration cues. Select -TtsProvider azure."}
+ $AnimationNarration=Join-Path $Build "dsu_animation_narration_v30.json"
+ $AnimationAudio=Join-Path $Audio "animation";$AnimationTimings=Join-Path $AnimationAudio "timings";$AnimationChapters=Join-Path $Videos "algorithm_chapters"
+ Mkdir $AnimationAudio;Mkdir $AnimationTimings;Mkdir $AnimationChapters
+ Run $python @((Join-Path $Scripts "generate_audio_azure_v30.py"),"--input",$AnimationNarration,"--output",$AnimationAudio,"--timings-output",$AnimationTimings,"--config",$Config,"--all-slides","--profile",$AzureVoiceProfile) "Generate Azure narration for algorithm animation states"
+ Run $python @((Join-Path $Scripts "render_dsu_animation_chapters_v30.py"),"--manifest",(Join-Path $Root "animations\\animation_manifest.json"),"--narration",$AnimationNarration,"--timings-dir",$AnimationTimings,"--audio-dir",$AnimationAudio,"--out",$AnimationChapters) "Render speech-synchronized DSU animation chapters"
+ $FinalVideo=Join-Path $Videos "lesson_full_with_animations.mp4"
+ $FinalSrt=Join-Path $Root "lesson_full_with_animations.srt"
+ Run $python @((Join-Path $Scripts "compose_full_course_v30.py"),"--base",$fullVideo,"--timings-dir",$Timings,"--chapters-dir",$AnimationChapters,"--chapter-timings-dir",$AnimationTimings,"--slide-srt-dir",$fullSubs,"--out",$FinalVideo,"--srt-out",$FinalSrt) "Insert algorithm animation chapters and rebuild synchronized subtitles"
+}
+
 # Merge slide-level SRT files while renumbering cues.
 # Export a readable teacher script and a measured phrase/pause timeline.
 $narrationData=Get-Content $Narration -Raw -Encoding UTF8|ConvertFrom-Json
@@ -157,12 +191,12 @@ foreach($file in (Get-ChildItem $fullSubs -Filter "slide_*.srt" -File|Sort-Objec
 }
 $srt=Join-Path $Root "lesson_full.srt"
 [IO.File]::WriteAllText($srt,($merged -join ($nl+$nl))+$nl,[Text.UTF8Encoding]::new($false))
-$manifest=@{version="2.6.0";status="COMPLETE";video="video/lesson_full.mp4";subtitles="lesson_full.srt";storyboard="build/v2_6/storyboard.json";narration="narration_script.txt";timeline="measured_timeline.csv";narration_events="build/v2_6/narration_events.json";regions="build/v2_6/regions.json";qa="qa/full/validation.json";manual_review_required=$true;auto_approved=$false}
+$manifest=@{version="3.0.0-beta.1";status="COMPLETE";tts_provider=$TtsProvider;azure_voice_profile=if($TtsProvider -eq "azure"){$AzureVoiceProfile}else{$null};video=(Resolve-Path $FinalVideo).Path;subtitles=(Resolve-Path $FinalSrt).Path;storyboard="build/v2_6/storyboard.json";narration="narration_script.txt";timeline="measured_timeline.csv";narration_events="build/v2_6/narration_events.json";regions="build/v2_6/regions.json";qa=if($FinalVideo -ne $fullVideo){($FinalVideo+".qa.json")}else{"qa/full/validation.json"};algorithm_animation=(Test-Path (Join-Path $Root "animations/animation_manifest.json"));manual_review_required=$true;auto_approved=$false}
 $manifest|ConvertTo-Json -Depth 5|Set-Content (Join-Path $Root "delivery_manifest.json") -Encoding UTF8
 $zip=Join-Path $Root "lesson_video_production_package.zip"
 if(Test-Path $zip){Remove-Item $zip -Force}
 Compress-Archive -Path (Join-Path $Root "*") -DestinationPath $zip -CompressionLevel Optimal
-Write-Host "COMPLETE: $fullVideo"
-Write-Host "SUBTITLES: $srt"
+Write-Host "COMPLETE: $FinalVideo"
+Write-Host "SUBTITLES: $FinalSrt"
 Write-Host "PACKAGE: $zip"
 Write-Host "Manual semantic review remains required."
