@@ -1,5 +1,6 @@
 """Render V2.4.1 compiled visual/speech/timeline alignment reports."""
 import argparse
+import hashlib
 import json
 import re
 import shutil
@@ -148,6 +149,52 @@ def validate_alignment_report(report):
     return {int(row["slide"]): row for row in slides}
 
 
+
+def sha256_file(path):
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def validate_render_inputs(slide_map, slides_dir, audio_dir, timings_dir,
+                           source_fingerprints, selected_slides=None):
+    """Fail closed if any render input differs from the compiler's audited source."""
+    if not isinstance(source_fingerprints, dict):
+        raise ValueError("Compiled report is missing source_fingerprints")
+    timing_hashes = source_fingerprints.get("timing_sha256")
+    audio_hashes = source_fingerprints.get("audio_sha256")
+    if not isinstance(timing_hashes, dict) or not isinstance(audio_hashes, dict):
+        raise ValueError("Compiled report is missing timing/audio fingerprints")
+    pages = sorted(set(selected_slides) if selected_slides else slide_map)
+    if not pages:
+        raise ValueError("No slides selected for source-integrity validation")
+    for page in pages:
+        if page not in slide_map:
+            raise ValueError(f"Slide {page}: absent from compiled alignment")
+        image = Path(slides_dir) / f"slide_{page:03d}.png"
+        audio = Path(audio_dir) / f"slide_{page:03d}.mp3"
+        timing = Path(timings_dir) / f"slide_{page:03d}.json"
+        for path in (image, audio, timing):
+            if not path.is_file():
+                raise FileNotFoundError(f"Slide {page}: required render input missing: {path}")
+        expected_image = slide_map[page].get("slide_image_sha256")
+        expected_audio = audio_hashes.get(str(page))
+        expected_timing = timing_hashes.get(str(page))
+        if not expected_image or not expected_audio or not expected_timing:
+            raise ValueError(f"Slide {page}: compiled report lacks one or more source fingerprints")
+        actual = {
+            "slide image": (sha256_file(image), expected_image),
+            "audio": (sha256_file(audio), expected_audio),
+            "timing JSON": (sha256_file(timing), expected_timing),
+        }
+        for label, (observed, expected) in actual.items():
+            if observed != expected:
+                raise ValueError(f"Slide {page}: {label} fingerprint mismatch; refusing stale/mixed-source render")
+    return True
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--slides", required=True, help="Directory of rendered slide PNGs")
@@ -179,6 +226,10 @@ def main():
     content_height = height - band
     slides_dir, audio_dir = Path(args.slides), Path(args.audio)
     timings_dir = Path(args.speech_timings)
+    validate_render_inputs(
+        slide_map, slides_dir, audio_dir, timings_dir,
+        alignment_report.get("source_fingerprints"), selected or None,
+    )
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     qa_dir = Path(args.qa)
