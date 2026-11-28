@@ -1,12 +1,12 @@
 ---
 name: interactive-lesson-video-builder
-version: 2.7.0-alpha.1
+version: 3.0.0-beta.1
 description: Single-upload, full-course AI teaching-video production. Automatically inspects PPTX, writes narration, plans scenes, synthesizes speech, aligns verified visual regions to measured audio time, renders MP4 and reports QA.
 ---
 
 # Interactive Lesson Video Builder — Active Skill
 
-Use the V2.4.1 source-audited media engine with the V2.6 single-upload orchestration contract. V2.2/V2.3 compatibility assets remain preserved and must never be overwritten.
+Use the V2.4.1 source-audited media engine, V2.6 single-upload orchestration contract and V3.0 Azure voice + algorithm-animation extensions. V2.2/V2.3 compatibility assets remain preserved and must never be overwritten.
 
 ## One-upload user contract
 
@@ -15,7 +15,9 @@ Use the V2.4.1 source-audited media engine with the V2.6 single-upload orchestra
 Use these defaults unless the user explicitly overrides them:
 - Language: Simplified Chinese when the source is Chinese; otherwise follow the source language.
 - Audience: middle-school informatics/algorithm learners when the deck is an informatics lesson; infer other audiences from the deck.
-- Teaching voice: clear, lively, energetic competition-coach delivery; configured neural TTS voice.
+- Teaching voice: Azure AI Speech `zh-CN-YunjianNeural`, default `sports-commentary-excited`; audition `sports-commentary` as the balanced A/B profile.
+- TTS provider: Azure AI Speech; do not silently fall back to Edge/eSpeak when Azure is selected.
+- Video output: 1920×1080 at 30 FPS unless the source or user explicitly requires otherwise.
 - Preserve original slide order, terminology, facts, examples, formulas, code, diagrams, constraints and teacher notes.
 - Output: full-course MP4, SRT, narration script, storyboard, measured timeline, source/alignment audit, QA report and a ZIP production package.
 - Preserve source aspect ratio; use 1080p output where practical.
@@ -25,14 +27,16 @@ Ask a question only if the PPTX cannot be opened or a truly blocking preference 
 
 ## Executable production workflow
 
-The active Skill must invoke `scripts/run_video_builder_v2_6.ps1` in the V2.4 engine directory. The user still supplies only the PPTX; narration JSON, verified alignment decisions and storyboard JSON are authored internally by the Skill agent and stored in the run workspace.
+The active Skill must invoke `scripts/run_video_builder_v2_6.ps1` in the V2.4 engine directory with `-TtsProvider azure -AzureVoiceProfile coach_excited`. The user still supplies only the PPTX; narration JSON, verified alignment decisions and storyboard JSON are authored internally by the Skill agent and stored in the run workspace. Azure credentials are configured in the local environment or GitHub Actions Secrets (`AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION`; optional `AZURE_SPEECH_ENDPOINT`). Never put keys in source files, prompts, chat messages or commits. If credentials are missing, stop the Azure audio stages and mark the run INCOMPLETE; do not substitute a different provider.
 
 1. Create a unique run workspace for the uploaded PPTX.
 2. Inspect the complete deck and write the narration event JSON using `prompts/lesson_narration_compiler_v2_4.md`.
 3. Invoke the runner with `-Phase Prepare`, the PPTX, workspace and agent-authored narration JSON. This exports slides, extracts native regions, generates TTS and measured timing, and prepares the machine-hashed alignment context.
 4. Read the alignment context and matching slide previews. Use the alignment planner and independent verifier prompts to create the verified alignment decisions JSON. Use `prompts/storyboard_compiler_v2_6.md` to author the storyboard JSON. The user must not be asked to prepare these files.
-5. Invoke the runner with `-Phase Render`, the same PPTX/workspace, and the internally generated decisions/storyboard. It finalizes and compiles alignment, renders and validates an internal representative pilot, then renders and validates the full course, merges SRT captions and packages the production ZIP.
-6. Verify that the delivery manifest says `status=COMPLETE`, both final MP4 and ZIP exist, and the full validation report exists before presenting download links. If any required stage fails, report `INCOMPLETE` and deliver diagnostics only; never claim completion.
+5. Invoke the runner with `-Phase Render`, the same PPTX/workspace, and the internally generated decisions/storyboard, retaining `-TtsProvider azure -AzureVoiceProfile coach_excited`. It finalizes and compiles alignment, renders and validates an internal representative pilot, then renders and validates the full course.
+6. For a source-verified four-exercise DSU deck, run `detect_dsu_deck_v30.py`, `build_dsu_v30_animations.py`, synthesize each animation narration cue with Azure, render one state frame per measured cue using `render_dsu_animation_chapters_v30.py`, and insert the four narrated chapters after their matching exercise sections with `compose_full_course_v30.py`. Rebuild the SRT using the same insertion offsets. Do not run the DSU profile on a generic or mismatched deck.
+7. Package the final 1080p MP4, synchronized SRT, four animation chapters, editable frame assets, voice profiles, narration, storyboard, measured timing, source audit and QA report.
+8. Verify that the delivery manifest says `status=COMPLETE`, the final MP4 and ZIP exist, the full validation report exists, and the subtitle duration matches the final video before presenting download links. If any required stage fails, report `INCOMPLETE` and deliver diagnostics only; never claim completion.
 
 The two runner phases are internal orchestration steps, not separate user tasks. The Skill agent must carry them through in one request.
 
@@ -95,3 +99,30 @@ The Skill must check prerequisites at run start: Python 3.10+, PowerPoint on Win
 ## Version isolation
 
 V2.2 and V2.3 scripts, outputs, caches and historical artifacts remain intact. V2.4 remains the source-audited engine. V2.6 changes the user workflow to single-upload, full-course automatic production without weakening the engine's integrity checks.
+
+
+## V3.0 Azure coach voice and DSU animation extension
+
+### Azure voice audition
+- Use Azure AI Speech voice `zh-CN-YunjianNeural`.
+- Produce two audition profiles from the same source passage: `coach_excited` = `sports-commentary-excited`; `coach_balanced` = `sports-commentary`.
+- These are two expression profiles of the same Azure voice, not two vendors. Save SSML, MP3, hashes and FFprobe durations. A human listener must select the preferred profile; machine QA cannot grade coach-like expression.
+- Preserve technical terminology and numbers. Use phrase-level synthesis, punctuation pauses, measured audio timing and bounded retries.
+- Azure bills synthesized text characters; report estimated/actual usage and never start an unbounded retry loop.
+
+### Source-grounded DSU animation
+- Detect the four-exercise DSU source by slide count and section headings before invoking the specialized renderer.
+- Render the four source sections: relatives (slides 13–15), fencing (16–21), food chain (22–27), and Galaxy (28–33).
+- The animation event narration is stored in `prompts/dsu_animation_narration_v30.json`. Event IDs and order must match the rendered state-frame manifest.
+- Ordinary DSU, three-slot S/P/E food-chain DSU, and weighted queue DSU are distinct models. Never substitute one model's state transitions for another.
+- For the food-chain example, preserve the deck's three-slot relations: for x eats y, merge P(x)=S(y), S(x)=E(y), E(x)=P(y). Reject self-eating, out-of-range IDs and contradictions.
+- For the Galaxy example, preserve the directed append operation and the receiving team's old size as the new root-edge offset. Weighted path compression must accumulate old edge offsets before rewriting parents.
+- Every state frame is hash-bound to the source deck and matched to exactly one Azure narration cue. Its display interval comes from the measured speech event and following pause, not a guessed duration.
+- Insert animation chapters after slides 15, 21, 27 and 33; rebuild SRT timestamps with the same insertion durations.
+- Require 1920×1080, 30 FPS, audio/video duration checks, full decode and source/state hash verification. Keep `manual_review_required=true` and `auto_approved=false`.
+
+### Azure configuration and fallback
+- Required environment: `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION`; optional custom endpoint `AZURE_SPEECH_ENDPOINT`.
+- Never commit secrets or ask the user to paste a key into chat. Recommend local environment variables or GitHub Actions Secrets.
+- If Azure is unavailable, the algorithm visual chapters may be generated without narration as a preview, but the final narrated course is INCOMPLETE. Do not silently fall back to Edge TTS or eSpeak.
+- The two voice profiles are A/B candidates; do not call them approved until a human listens to both.

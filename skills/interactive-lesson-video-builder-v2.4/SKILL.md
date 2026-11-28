@@ -58,3 +58,8 @@ Subtitles and focus overlays derive from the same measured phrase interval. All 
 - Recompute slide-image, audio and timing-file SHA-256 values immediately before rendering.
 - Check source fingerprints, phrase coverage, interval overlap, geometry bounds, subtitle intervals, focus ownership, stream metadata, full decode and audio/video duration alignment.
 - Always report `manual_review_required=true` and `auto_approved=false`. Machine QA does not certify teaching correctness.
+
+
+## V3.0 extension
+
+The active single-upload Skill now supports Azure AI Speech and a source-specific DSU animation profile. The V2.4 alignment contract remains authoritative: audio timing is measured with FFprobe; state frames are hash-bound to the source PPTX; each animation cue has a stable event ID; no guessed phrase timing is allowed. Azure mode requires `AZURE_SPEECH_KEY` and `AZURE_SPEECH_REGION`. The runner must not silently fall back to Edge/eSpeak. For a detected four-exercise DSU deck, build and validate the four animation chapters, synthesize the matching cue narration, render frames for measured intervals, insert the chapters after their exercise sections, and rebuild the SRT with the same offsets. Output remains 1920×1080 at 30 FPS. Human review remains mandatory.

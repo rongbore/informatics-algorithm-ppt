@@ -1,0 +1,30 @@
+{
+  "version": "3.0.0",
+  "provider": "azure_ai_speech",
+  "default_profile": "coach_excited",
+  "profiles": {
+    "coach_excited": {
+      "voice": "zh-CN-YunjianNeural",
+      "style": "sports-commentary-excited",
+      "rate": "+2%",
+      "pitch": "+1st",
+      "styledegree": 1.15
+    },
+    "coach_balanced": {
+      "voice": "zh-CN-YunjianNeural",
+      "style": "sports-commentary",
+      "rate": "-2%",
+      "pitch": "+0st",
+      "styledegree": 1
+    }
+  },
+  "required_environment": [
+    "AZURE_SPEECH_KEY",
+    "AZURE_SPEECH_REGION"
+  ],
+  "optional_environment": [
+    "AZURE_SPEECH_ENDPOINT"
+  ],
+  "output_format": "audio-24khz-48kbitrate-mono-mp3",
+  "human_listening_review_required": true
+}

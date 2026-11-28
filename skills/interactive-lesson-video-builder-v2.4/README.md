@@ -99,3 +99,14 @@ The validated scripts and detailed engine command reference remain in this direc
 - `prompts/storyboard_compiler_v2_6.md`
 
 The Skill agent orchestrates the semantic planning and verification steps between these deterministic tools. V2.2/V2.3 remain untouched.
+
+
+## V3.0 Azure voice and DSU animation extension
+
+- Azure AI Speech is selected by the active Skill via `-TtsProvider azure -AzureVoiceProfile coach_excited`.
+- A/B audition profiles use `zh-CN-YunjianNeural`: `sports-commentary-excited` and `sports-commentary`. These are two expression styles of one Azure voice, not two vendors. MP3 auditions require the user's Azure resource key and region.
+- The active runner detects the source-specific 34-slide DSU deck and creates four 1080p/30fps state-driven animation chapters. The state frames are generated from the source problem examples and verified algorithm rules.
+- Azure narration cues are synthesized individually, measured, then bound to their matching state frames. The four chapters are inserted after the relevant exercise sections and the final SRT is rebased with the same insertion durations.
+- Required environment variables: `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION`; optional `AZURE_SPEECH_ENDPOINT`. Never commit real credentials.
+- If Azure credentials are missing, the run is incomplete; do not fall back silently to Edge TTS or local synthetic speech.
+- Current animation transitions are discrete state changes, not continuous object morphing. All releases retain `manual_review_required=true` and `auto_approved=false`.
