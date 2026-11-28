@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import math
+import re
 from pathlib import Path
 
 try:
@@ -52,7 +53,7 @@ def infer_kind(text):
         r"\b(?:cout|cin|printf|scanf)\b", r"\b(?:for|while|if|return)\s*[\(;]",
         r"\bvector\s*<", r"[{};]",
     )
-    if sum(bool(__import__("re").search(pattern, value)) for pattern in code_patterns) >= 2:
+    if sum(bool(re.search(pattern, value)) for pattern in code_patterns) >= 2:
         return "code"
     if __import__("re").search(r"(?:dp|f|g)\s*\[|状态转移|递推|拓扑序|邻接表|树形DP|区间查询", value, __import__("re").I):
         return "algorithm"
@@ -107,6 +108,8 @@ def extract_regions(pptx_path, slides_dir=None, vision_plan_path=None):
             shape_id = int(shape.shape_id)
             name = str(getattr(shape, "name", "") or "")
             shape_type = shape_type_name(shape)
+            rotation = float(getattr(shape, "rotation", 0) or 0)
+            geometry_ok = abs(rotation % 360.0) < 0.01
             bbox = bbox_normalized(
                 int(shape.left), int(shape.top), int(shape.width), int(shape.height),
                 slide_width, slide_height
@@ -128,7 +131,10 @@ def extract_regions(pptx_path, slides_dir=None, vision_plan_path=None):
                             add_region(
                                 regions, slide_number, region_id, shape_id, name,
                                 "TABLE_CELL", cell_text, cell_bbox,
-                                extra={"row_index": row_index, "column_index": col_index}
+                                mapping_eligible=geometry_ok,
+                                geometry_status="source_verified" if geometry_ok else "rotated_shape_review_required",
+                                extra={"row_index": row_index, "column_index": col_index,
+                                       "rotation_degrees": rotation}
                             )
                             regions[-1]["kind"] = infer_kind(cell_text)
                         x += int(table.columns[col_index].width)
@@ -139,7 +145,10 @@ def extract_regions(pptx_path, slides_dir=None, vision_plan_path=None):
             if text:
                 add_region(
                     regions, slide_number, f"s{slide_number:03d}_sh{shape_id}",
-                    shape_id, name, shape_type, text, bbox
+                    shape_id, name, shape_type, text, bbox,
+                    mapping_eligible=geometry_ok,
+                    geometry_status="source_verified" if geometry_ok else "rotated_shape_review_required",
+                    extra={"rotation_degrees": rotation}
                 )
                 regions[-1]["kind"] = infer_kind(text)
             else:
