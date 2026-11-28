@@ -150,6 +150,120 @@ def validate_alignment_report(report):
 
 
 
+def load_storyboard(path, slide_map):
+    """Load source-grounded shot plans and reject unknown slides/regions."""
+    if not path:
+        return {}
+    storyboard = json.loads(Path(path).read_text(encoding="utf-8-sig"))
+    if storyboard.get("schema_version") != "2.6.0":
+        raise ValueError("Unsupported storyboard schema")
+    rows = storyboard.get("slides")
+    if not isinstance(rows, list):
+        raise ValueError("Storyboard slides must be a list")
+    plans = {}
+    for row in rows:
+        page = int(row["slide"])
+        if page not in slide_map or page in plans:
+            raise ValueError(f"Storyboard contains unknown or duplicate slide {page}")
+        shots = row.get("shots") or []
+        if not shots:
+            raise ValueError(f"Storyboard slide {page} contains no shots")
+        shot = shots[0]
+        known_regions = {
+            region["region_id"] for region in slide_map[page].get("regions", [])
+        }
+        region_ids = shot.get("region_ids", [])
+        unknown = set(region_ids) - known_regions
+        if unknown:
+            raise ValueError(
+                f"Storyboard slide {page} references unknown regions: {sorted(unknown)}"
+            )
+        if shot.get("render_status") == "review_required":
+            shot = dict(shot)
+            shot["camera_motion"] = "none"
+            shot["region_ids"] = []
+        plans[page] = {
+            "shot": shot,
+            "shot_count": len(shots),
+            "selected_region_id": next(iter(shot.get("region_ids", [])), None),
+        }
+    return plans
+
+
+def camera_crop(plan, row, width, content_height, offset_x, offset_y,
+                scaled_width, scaled_height):
+    """Return a safe static crop around one verified region for close-up shots."""
+    if not plan:
+        return None
+    shot = plan["shot"]
+    shot_type = shot.get("shot_type", "establishing")
+    zoom = {
+        "establishing": 1.0,
+        "medium": 1.0,
+        "close_up": 1.35,
+        "extreme_close_up": 1.60,
+        "split_comparison": 1.0,
+        "process_reveal": 1.0,
+        "recap": 1.0,
+    }.get(shot_type, 1.0)
+    region_id = plan.get("selected_region_id")
+    if zoom <= 1.0 or not region_id:
+        return None
+    target = next(
+        (region for region in row.get("regions", [])
+         if region.get("region_id") == region_id),
+        None,
+    )
+    if target is None:
+        raise ValueError(f"Storyboard target region {region_id} disappeared")
+    x, y, box_width, box_height = [float(v) for v in target["bbox"]]
+    px = offset_x + x * scaled_width
+    py = offset_y + y * scaled_height
+    pw = box_width * scaled_width
+    ph = box_height * scaled_height
+    if pw <= 0 or ph <= 0:
+        raise ValueError(f"Storyboard target region {region_id} has invalid geometry")
+    # Keep the complete target readable with generous surrounding context.
+    zoom = min(zoom, width / (pw * 1.8), content_height / (ph * 1.8))
+    zoom = max(1.0, zoom)
+    crop_width = max(2, int(width / zoom) // 2 * 2)
+    crop_height = max(2, int(content_height / zoom) // 2 * 2)
+    center_x, center_y = px + pw / 2, py + ph / 2
+    crop_x = int(round(center_x - crop_width / 2))
+    crop_y = int(round(center_y - crop_height / 2))
+    crop_x = max(0, min(width - crop_width, crop_x))
+    crop_y = max(0, min(content_height - crop_height, crop_y))
+    actual_zoom_x = width / crop_width
+    actual_zoom_y = content_height / crop_height
+    return {
+        "x": crop_x,
+        "y": crop_y,
+        "width": crop_width,
+        "height": crop_height,
+        "zoom_x": actual_zoom_x,
+        "zoom_y": actual_zoom_y,
+        "region_id": region_id,
+        "shot_type": shot_type,
+    }
+
+
+def transform_box_for_crop(px, py, pw, ph, crop):
+    """Transform and clip a focus rectangle into the cropped output canvas."""
+    if crop is None:
+        return px, py, pw, ph
+    left = max(0.0, px - crop["x"])
+    top = max(0.0, py - crop["y"])
+    right = min(float(crop["width"]), px + pw - crop["x"])
+    bottom = min(float(crop["height"]), py + ph - crop["y"])
+    if right <= left or bottom <= top:
+        return None
+    x = int(round(left * crop["zoom_x"]))
+    y = int(round(top * crop["zoom_y"]))
+    w = int(round((right - left) * crop["zoom_x"]))
+    h = int(round((bottom - top) * crop["zoom_y"]))
+    return x, y, max(2, min(1920 - x, w)), max(2, min(948 - y, h))
+
+
 def sha256_file(path):
     digest = hashlib.sha256()
     with Path(path).open("rb") as stream:
@@ -205,6 +319,7 @@ def main():
     parser.add_argument("--qa", default="qa_v2_4")
     parser.add_argument("--ux-config", default="config/video_ux_v2_4.json")
     parser.add_argument("--subtitle-dir", default="subtitles_v2_4")
+    parser.add_argument("--storyboard", help="Optional V2.6 source-grounded storyboard JSON")
     parser.add_argument("--only-slides", nargs="*", type=int)
     parser.add_argument("--font-file", default=r"C:\Windows\Fonts\msyh.ttc")
     args = parser.parse_args()
@@ -215,6 +330,7 @@ def main():
     config = json.loads(Path(args.ux_config).read_text(encoding="utf-8-sig"))
     alignment_report = json.loads(Path(args.alignment_report).read_text(encoding="utf-8-sig"))
     slide_map = validate_alignment_report(alignment_report)
+    storyboard = load_storyboard(args.storyboard, slide_map)
     selected = set(args.only_slides or [])
     if selected and not selected <= set(slide_map):
         raise SystemExit("Requested slide is absent from compiled alignment")
@@ -265,8 +381,47 @@ def main():
             filters = [
                 f"scale={width}:{content_height}:force_original_aspect_ratio=decrease",
                 f"pad={width}:{content_height}:(ow-iw)/2:(oh-ih)/2:color=black",
-                f"pad={width}:{height}:0:0:color={config['layout']['subtitle_band_color']}",
             ]
+            shot_plan = storyboard.get(page)
+            crop = camera_crop(
+                shot_plan, row, width, content_height,
+                offset_x, offset_y, scaled_width, scaled_height,
+            )
+            if crop:
+                filters.append(
+                    f"crop={crop['width']}:{crop['height']}:{crop['x']}:{crop['y']}"
+                )
+                filters.append(f"scale={width}:{content_height}")
+            motion = (
+                shot_plan["shot"].get("camera_motion", "none")
+                if shot_plan else "none"
+            )
+            has_verified_focus = any(
+                region.get("intervals") for region in row.get("regions", [])
+            )
+            motion_status = "not_requested"
+            if motion in ("slow_push_in", "slow_pan") and crop is None:
+                if has_verified_focus:
+                    motion_status = "suppressed_to_preserve_focus_alignment"
+                else:
+                    if motion == "slow_push_in":
+                        expression = f"min(1+0.025*on/({duration:.3f}*{fps}),1.025)"
+                        x_expression = "iw/2-(iw/zoom/2)"
+                    else:
+                        expression = "1.04"
+                        x_expression = (
+                            f"(iw-iw/zoom)*min(on/({duration:.3f}*{fps}),1)"
+                        )
+                    filters.append(
+                        f"zoompan=z='{expression}':x='{x_expression}':"
+                        f"y='ih/2-(ih/zoom/2)':d=1:s={width}x{content_height}:fps={fps}"
+                    )
+                    motion_status = "rendered"
+            elif motion in ("slow_push_in", "slow_pan") and crop is not None:
+                motion_status = "static_closeup_used_instead"
+            filters.append(
+                f"pad={width}:{height}:0:0:color={config['layout']['subtitle_band_color']}"
+            )
             focus = config["focus"]
             colors = {
                 "knowledge": focus["knowledge_color"],
@@ -282,6 +437,16 @@ def main():
                 py = max(0, min(content_height - 2, round(offset_y + y * scaled_height)))
                 pw = max(2, min(width - px, round(box_width * scaled_width)))
                 ph = max(2, min(content_height - py, round(box_height * scaled_height)))
+                transformed = transform_box_for_crop(px, py, pw, ph, crop)
+                if transformed is None:
+                    focus_rows.append({
+                        "region_index": region_index,
+                        "region_id": region["region_id"],
+                        "intervals": intervals if "intervals" in locals() else region.get("intervals", []),
+                        "reason": "outside_selected_closeup_crop",
+                    })
+                    continue
+                px, py, pw, ph = transformed
                 color = colors.get(region.get("kind"), colors["knowledge"])
                 intervals = region.get("intervals", [])
                 for interval in intervals:
@@ -326,6 +491,12 @@ def main():
                         f"fontcolor={countdown['font_color']}:fontsize={int(countdown['font_size'])}:"
                         f"x={x}:y={y}:enable='between(t,{start:.3f},{end:.3f})'"
                     )
+            if shot_plan and shot_plan["shot"].get("transition_in") == "short_dissolve":
+                fade_duration = min(0.20, duration / 4)
+                filters.append(f"fade=t=in:st=0:d={fade_duration:.3f}")
+                filters.append(
+                    f"fade=t=out:st={max(0.0, duration - fade_duration):.3f}:d={fade_duration:.3f}"
+                )
             subtitle = config["subtitle"]
             if subtitle.get("enabled", True):
                 style = (
@@ -361,6 +532,16 @@ def main():
                     "scale": round(scale, 7),
                     "offset_x": round(offset_x, 3),
                     "offset_y": round(offset_y, 3),
+                    "camera_crop": crop,
+                },
+                "storyboard": {
+                    "shot_type": shot_plan["shot"].get("shot_type") if shot_plan else "establishing",
+                    "shot_count_in_storyboard": shot_plan["shot_count"] if shot_plan else 0,
+                    "selected_region_id": shot_plan.get("selected_region_id") if shot_plan else None,
+                    "camera_motion_requested": motion,
+                    "camera_motion_status": motion_status,
+                    "transition_in": shot_plan["shot"].get("transition_in", "cut") if shot_plan else "cut",
+                    "transition_implementation": "fade_to_black" if shot_plan and shot_plan["shot"].get("transition_in") == "short_dissolve" else "cut",
                 },
                 "focus_alignment": focus_rows,
             })
@@ -398,7 +579,10 @@ def main():
         "auto_approved": False,
         "manual_review_required": True,
         "slides": rendered_rows,
+        "storyboard_rendering": "first shot per slide; verified static close-up crops; optional slow push-in/pan when no verified focus overlays are active; short dissolve implemented as fade-to-black",
         "limitations": [
+            "Additional storyboard shots on the same slide are recorded but not yet rendered as separate time-sliced shots.",
+            "Dynamic camera motion is suppressed on slides with active verified focus overlays to preserve overlay geometry.",
             "The semantic association is AI-proposed and second-pass verified; deterministic validation checks source identity, evidence, geometry, and time.",
             "Phrase-level alignment is not word-level or phoneme-level forced alignment.",
             "Frame-level visual quality and instructional correctness still require human review.",
