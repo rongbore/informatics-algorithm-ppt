@@ -35,7 +35,8 @@ class SlideRegionExtractionTests(unittest.TestCase):
             regions = manifest["slides"][0]["regions"]
             text_region = next(x for x in regions if x["shape_id"] == shape_id)
             self.assertEqual(text_region["text"], "dp[i] = dp[i-1] + a[i]")
-            self.assertAlmostEqual(text_region["bbox"][0], 1 / 13.333333, places=3)
+            expected_x = Inches(1) / manifest["slide_size_emu"]["width"]
+            self.assertAlmostEqual(text_region["bbox"][0], expected_x, places=6)
             cells = [x for x in regions if x["shape_type"] == "TABLE_CELL"]
             self.assertEqual(len(cells), 2)
             self.assertEqual(cells[0]["text"], "左区间")
