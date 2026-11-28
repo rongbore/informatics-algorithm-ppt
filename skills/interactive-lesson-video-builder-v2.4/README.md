@@ -1,3 +1,32 @@
+# Interactive Lesson Video Builder V2.4.1 — Alpha.5 / V2.5 Orchestration
+
+V2.4.1 is the source-audited execution engine. The active Skill entrypoint now defines a V2.5 agent-orchestrated workflow: one user request with a PPTX should trigger source inspection, narration authoring, TTS, measured timing, visual/speech alignment, rendering and QA without asking the user to hand-author intermediate JSON or copy prompts between stages.
+
+## V2.5 orchestration behavior
+
+- The Skill agent creates narration events from slide content and speaker notes using `prompts/lesson_narration_compiler_v2_4.md`.
+- It runs the extraction, TTS, context preparation, planner, independent verifier, finalizer, compiler, renderer and media-QA steps in sequence.
+- It preserves intermediate artifacts and records every visual-region ID, narration event ID, phrase index, exact phrase, source fingerprint and measured interval.
+- Ambiguous or unverified matches stop at review_required/unmatched; they are never silently forced into a focus overlay.
+- The agent produces a five-slide pilot and review checklist before full-course rendering.
+
+The engine still requires PowerPoint on Windows for source-faithful slide export, plus FFmpeg/FFprobe and the configured TTS dependency. AI planning and verification are performed by the Skill agent in separate passes. Machine QA does not replace human visual review.
+
+## Three-way alignment contract
+
+Every visible focus event links:
+1. Visual source: PPTX SHA-256, slide-image SHA-256, slide number, stable region ID, normalized bbox, geometry source and verification status.
+2. Speech source: narration event ID, phrase index, exact phrase text and audio SHA-256.
+3. Time source: actual measured start/end seconds from the generated audio, timing JSON SHA-256 and FFprobe-probed duration.
+
+Subtitles and focus overlays derive from the same measured phrase interval. The renderer consumes only the compiled alignment report. Never use slide-duration ratios, character counts, reading-speed estimates or guessed timestamps.
+
+## Existing engine documentation
+
+V2.2 and V2.3 compatibility assets remain preserved. The V2.4 engine implementation is maintained in this directory; see `SKILL.md` for the complete contract and `../interactive-lesson-video-builder/SKILL.md` for the active Skill entrypoint.
+
+---
+
 # Interactive Lesson Video Builder V2.4.1 — Alpha.4
 
 V2.4.1 introduces an automatic, source-audited pipeline that connects PPTX visual regions, spoken narration phrases, and measured audio timestamps. V2.2 and V2.3 remain preserved in the repository for compatibility.
