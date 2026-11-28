@@ -57,7 +57,9 @@ For DFS/BFS, union-find, DP, trees and graphs, animation is allowed only when a 
 
 ## Output
 
-- Full-course MP4 and SRT.
+- Full-course MP4 and merged SRT.
+- Readable narration script (`narration_script.txt`).
+- Measured speech/pause timeline (`measured_timeline.csv`).
 - Readable narration script and narration event JSON.
 - Storyboard JSON/CSV.
 - Per-phrase timing JSON/CSV and audio assets.
@@ -79,7 +81,7 @@ The Prepare phase exports every slide with PowerPoint, extracts native regions, 
 
     powershell -ExecutionPolicy Bypass -File scripts/run_video_builder_v2_6.ps1 -Phase Render -Pptx input/lesson.pptx -OutputDir output/lesson -AlignmentDecisions output/lesson/alignment_decisions_verified.json -StoryboardJson output/lesson/storyboard.json
 
-The Render phase compiles the alignment, renders and validates a content-aware internal pilot, renders the full deck, validates the final MP4, merges SRT captions and creates `lesson_video_production_package.zip`. The two phases are invisible implementation details; the user is not asked to perform them.
+The Render phase compiles the alignment, renders and validates a content-aware internal pilot, renders the full deck, validates the final MP4, merges SRT captions, exports `narration_script.txt` and `measured_timeline.csv`, and creates `lesson_video_production_package.zip`. Any terminating failure writes a delivery manifest with `status=INCOMPLETE`; the runner must never present a partial file as a completed course. The two phases are invisible implementation details; the user is not asked to perform them.
 
 **Important:** The current renderer outputs the original slide with verified focus overlays, subtitles and numeric thinking countdowns. Camera moves described in the storyboard are not automatically present in the MP4 unless a future renderer implements them. Dynamic algorithm simulations require a validated state trace. Never promise unsupported effects.
 
