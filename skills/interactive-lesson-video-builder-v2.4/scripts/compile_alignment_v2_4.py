@@ -437,7 +437,9 @@ def compile_alignment(region_manifest, narration, plan, timing_dir, audio_dir,
     return {
         "version": "2.4.1-alpha.4",
         "schema_version": "2.4.1",
+        "context_id": plan["context_id"],
         "source_fingerprints": {
+            "alignment_decisions_sha256": plan["decisions_sha256"],
             "source_pptx_sha256": region_manifest["source_pptx_sha256"],
             "region_manifest_sha256": canonical_digest(region_manifest),
             "narration_sha256": canonical_digest(narration),
