@@ -29,9 +29,9 @@ $Font="C:\Windows\Fonts\msyh.ttc"
 
 function NeedFile($p,$label){if(-not(Test-Path -LiteralPath $p -PathType Leaf)){throw "$label missing: $p"}}
 function Mkdir($p){New-Item -ItemType Directory -Force -Path $p|Out-Null}
-function Run($exe,[string[]]$args,$label){
+function Run($exe,[string[]]$Arguments,$label){
  Write-Host "";Write-Host "[$label]" -ForegroundColor Cyan
- & $exe @args
+ & $exe @Arguments
  if($LASTEXITCODE -ne 0){throw "$label failed with exit code $LASTEXITCODE"}
 }
 foreach($p in @($Slides,$Build,$Audio,$Timings,$Subtitles,$Videos,$Qa)){Mkdir $p}
@@ -55,7 +55,11 @@ if($Phase -eq "Prepare"){
  exit 0
 }
 
-foreach($entry in @(@($Regions,"Regions"),@($Narration,"Narration"),@($Context,"Alignment context"),@($AlignmentDecisions,"Verified decisions"),@($StoryboardJson,"Storyboard"))){NeedFile $entry[0] $entry[1]}
+NeedFile $Regions "Regions manifest"
+NeedFile $Narration "Narration events"
+NeedFile $Context "Alignment context"
+NeedFile $AlignmentDecisions "Verified decisions"
+NeedFile $StoryboardJson "Storyboard JSON"
 Copy-Item (Resolve-Path $AlignmentDecisions).Path $Decisions -Force
 Copy-Item (Resolve-Path $StoryboardJson).Path (Join-Path $Build "storyboard.json") -Force
 $finalize=Join-Path $Scripts "finalize_alignment_plan_v2_4.py"
