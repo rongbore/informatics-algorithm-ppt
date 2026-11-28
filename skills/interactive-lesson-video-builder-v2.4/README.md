@@ -22,7 +22,7 @@ This is the isolated V2.4 development package. It does not replace the V2.3 Skil
 
 Install TTS dependency:
 
-    python -m pip install edge-tts
+    python -m pip install -r requirements-v2.4.txt
 
 ## Run tests
 
