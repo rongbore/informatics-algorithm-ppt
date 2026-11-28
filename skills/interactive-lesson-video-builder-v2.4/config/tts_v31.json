@@ -1,0 +1,39 @@
+{
+  "schema_version": "3.1",
+  "default_provider": "tencent",
+  "fallback_provider": "local",
+  "cloud_policy": {
+    "allow_free_tier_env": "TENCENT_TTS_ALLOW_FREE_TIER",
+    "postpaid_disabled_ack_env": "TENCENT_TTS_POSTPAID_DISABLED",
+    "free_budget_env": "TENCENT_TTS_FREE_BUDGET_CHARS",
+    "budget_state_default": "~/.lesson-video-builder/tencent_tts_budget_v31.json",
+    "default_voice_type": 1001,
+    "default_region": "ap-guangzhou",
+    "max_characters_per_request": 140,
+    "no_automatic_retries": true,
+    "failed_request_reservation_retained": true,
+    "cloud_calls_disabled_without_verified_budget": true
+  },
+  "local_policy": {
+    "engine": "sherpa-onnx-vits",
+    "model": "vits-icefall-zh-aishell3",
+    "offline": true,
+    "required_env": [
+      "SHERPA_TTS_MODEL",
+      "SHERPA_TTS_TOKENS"
+    ],
+    "optional_env": [
+      "SHERPA_TTS_LEXICON",
+      "SHERPA_TTS_RULE_FSTS",
+      "SHERPA_TTS_SPEAKER_ID",
+      "SHERPA_TTS_THREADS"
+    ]
+  },
+  "audio": {
+    "sample_rate": 24000,
+    "channels": 1,
+    "format": "mp3"
+  },
+  "human_review_required": true,
+  "auto_approved": false
+}
