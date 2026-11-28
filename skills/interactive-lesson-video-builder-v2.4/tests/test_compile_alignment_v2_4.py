@@ -98,6 +98,7 @@ def fixture(directory, phrase_one_targets=None, first_confidence=0.98):
     }
     plan = {
         "schema_version": "2.4.1",
+        "context_id": "test-context",
         "region_manifest_sha256": compiler.canonical_digest(manifest),
         "narration_sha256": compiler.canonical_digest(narration),
         "timing_sha256": {"1": compiler.sha256_file(timing_path)},
