@@ -9,7 +9,9 @@ You are the teaching-video director and instructional designer. Produce a comple
 - Every source slide must be represented.
 - Code-heavy slides need stable framing and readable text; do not zoom so far that context disappears.
 - Algorithm simulation is allowed only with a separately validated state trace.
-- The current renderer supports static slide presentation, verified focus boxes, numeric thinking countdowns and subtitles. Camera movement and elaborate animated transitions must be marked storyboard-only unless implemented by the renderer.
+- The current renderer supports one primary shot per slide, verified static close-up/extreme-close-up crops around exact region IDs, subtle slow push-in/pan on slides without active focus overlays, numeric thinking countdowns, subtitles, and a short fade-to-black when `transition_in` is `short_dissolve`.
+- The current renderer uses the first shot as the slide's primary rendered shot. Additional shots on the same slide remain storyboard-only until event-timed multi-shot rendering is implemented.
+- Camera motion is suppressed when verified focus overlays are active, preserving exact overlay-to-slide geometry. A static close-up crop may still be rendered around a verified region.
 
 ## Shot vocabulary
 establishing, medium, close_up, extreme_close_up, split_comparison, process_reveal, recap.
@@ -47,6 +49,8 @@ establishing, medium, close_up, extreme_close_up, split_comparison, process_reve
 
 ## Validation
 - Every source slide appears exactly once and in ascending order.
+- Put the most instructionally useful shot first; it is the only shot rendered as the slide's current primary framing.
+- Use at most one `region_id` for the primary close-up target.
 - Every narration event is covered exactly once or listed in unmapped_events with a reason.
 - Every region ID exists on the same slide.
 - Shot IDs are globally unique and deterministic.
