@@ -82,7 +82,7 @@ def fixture(directory, phrase_one_targets=None, first_confidence=0.98):
         "event_id": "s001_e01", "phrase_index": 0, "phrase_text": first_text,
         "status": "matched", "region_ids": target_ids,
         "mapping_basis": "semantic", "confidence": first_confidence,
-        "verification": {"status": "confirmed", "reviewer_pass": "independent-review-pass-1"},
+        "verification": {"status": "confirmed", "planner_pass": "planner-pass-1", "reviewer_pass": "independent-review-pass-1"},
         "evidence": evidence_one,
     }
     phrase_two = {
@@ -90,7 +90,7 @@ def fixture(directory, phrase_one_targets=None, first_confidence=0.98):
         "phrase_text": "最后输出代码结果。", "status": "matched",
         "region_ids": ["s001_sh11"], "mapping_basis": "semantic",
         "confidence": 0.97,
-        "verification": {"status": "confirmed", "reviewer_pass": "independent-review-pass-2"},
+        "verification": {"status": "confirmed", "planner_pass": "planner-pass-2", "reviewer_pass": "independent-review-pass-2"},
         "evidence": [{
             "region_id": "s001_sh11", "region_quote": "cout << dp[n];",
             "speech_quote": "代码结果", "reasoning": "讲解指向展示输出语句的代码区域。",
