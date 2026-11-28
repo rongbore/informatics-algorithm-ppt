@@ -252,5 +252,27 @@ class CompiledRendererTests(unittest.TestCase):
 
 
 
+    def test_storyboard_supports_content_aware_pilot_subset(self):
+        import json
+        import tempfile
+
+        storyboard = {
+            "schema_version": "2.6.0",
+            "source_pptx_sha256": "source-hash",
+            "slides": [
+                {"slide": 1, "shots": [{"shot_type": "establishing", "region_ids": []}]},
+                {"slide": 2, "shots": [{"shot_type": "close_up", "region_ids": ["s002_r01"]}]},
+            ],
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "storyboard.json"
+            path.write_text(json.dumps(storyboard), encoding="utf-8")
+            plans = renderer.load_storyboard(
+                path, {1: {"regions": []}}, "source-hash", {1}
+            )
+        self.assertEqual(set(plans), {1})
+
+
+
 if __name__ == "__main__":
     unittest.main()
