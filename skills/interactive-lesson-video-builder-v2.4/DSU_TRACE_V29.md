@@ -15,3 +15,8 @@ This module is not yet integrated with PPTX semantic extraction, speech timing o
 ## Standalone frame renderer
 
 Run `python scripts/render_dsu_frames_v29.py trace.json output_frames` with a new output directory. The renderer replays the trace before writing any frame and supports at most 24 nodes for classroom readability. Each SVG shows the actual forest, parent array, root sizes, active nodes and changed parent edges. The frames.json manifest records the trace digest and per-frame SHA-256. Labels are currently English. These are standalone state illustrations, not a timed MP4 animation. Source verification and speech binding are explicitly false until an actual source-grounded integration exists.
+
+## Measured phrase binding
+
+Run `python scripts/compile_dsu_timeline_v29.py trace.json frames timing.json bindings.json timeline.json`.
+Bindings contain slide, trace_sha256, timing_sha256 (canonical JSON digest from the compiler's digest function), and bindings array with frame_index, event_id, phrase_index, phrase_text. Every frame must map to a distinct measured phrase in order. The compiler regenerates the SVG manifest and verifies all hashes. Gaps are designated for original-slide fallback. This conservative contract may reject lessons with fewer phrases than frames; do not invent timings to satisfy it. Output is structural timing metadata, not actual video or semantic source verification. Audio-file hash and actual audio duration validation, localization, and renderer integration remain separate tasks.
