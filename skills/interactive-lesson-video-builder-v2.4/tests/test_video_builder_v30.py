@@ -38,8 +38,8 @@ class DsuAnimationIntegrationTests(unittest.TestCase):
     self.assertEqual(row["resolution"],"1920x1080");self.assertEqual(row["fps"],30)
     self.assertTrue((out/row["file"]).exists())
    self.assertEqual(manifest["animations"][1]["perimeters"],[40,10])
-   self.assertEqual(manifest["animations"][2]["accepted"],3)
-   self.assertEqual(manifest["animations"][2]["rejected"],3)
+   self.assertEqual(manifest["animations"][2]["source_grounded_examples"]["sample_1"]["false_count"],0)
+   self.assertEqual(manifest["animations"][2]["source_grounded_examples"]["sample_2"]["false_count"],1)
    self.assertEqual(manifest["animations"][3]["node_2_offset"],4)
 if __name__=="__main__":unittest.main()
 
@@ -57,7 +57,7 @@ class SourceDeckNarrationContractTests(unittest.TestCase):
   prompt=json.loads((ROOT.parent/"prompts"/"dsu_animation_narration_v30.json").read_text(encoding="utf-8"))
   food=next(x for x in prompt["animations"] if x["animation_id"]=="food_chain")
   text=" ".join(x["text"] for x in food["events"])
-  for fact in ["{1,2,3,5}","{4}","A 吃 B","假话数为零","2、1、4","假话数为一"]:
+  for fact in ["1、2、3、5","B 类是 4","A 吃 B","假话数为零","2、1、4","假话数为一"]:
    self.assertIn(fact,text)
   for invented in ["1 吃 2","2 吃 3","3 吃 1","三句中有三句为假"]:
    self.assertNotIn(invented,text)
