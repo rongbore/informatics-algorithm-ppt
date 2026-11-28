@@ -126,3 +126,34 @@ V2.2 and V2.3 scripts, outputs, caches and historical artifacts remain intact. V
 - Never commit secrets or ask the user to paste a key into chat. Recommend local environment variables or GitHub Actions Secrets.
 - If Azure is unavailable, the algorithm visual chapters may be generated without narration as a preview, but the final narrated course is INCOMPLETE. Do not silently fall back to Edge TTS or eSpeak.
 - The two voice profiles are A/B candidates; do not call them approved until a human listens to both.
+
+
+## V3.1 Tencent-first / local-offline TTS architecture
+
+The default provider is Tencent Cloud's general `TextToVoice` API, with a fully offline Mandarin sherpa-onnx VITS engine as the fallback. Azure and Edge remain explicit legacy options only; they are not selected by default.
+
+### Zero-unauthorized-charge policy (mandatory)
+- Tencent Cloud synthesis is disabled unless all of the following are explicitly configured: `TENCENT_TTS_ALLOW_FREE_TIER=true`, `TENCENT_TTS_POSTPAID_DISABLED=true`, valid Tencent credentials, and `TENCENT_TTS_FREE_BUDGET_CHARS` greater than zero.
+- The configured character cap must be no greater than the remaining free quota shown in the Tencent console. The operator must verify that postpaid billing is disabled in the Tencent console; the environment acknowledgement is not a substitute for that console check.
+- A persistent local ledger reserves characters before each API request. It is conservative: reservations are not refunded after uncertain network failures. Cached phrases are reused without another API request. No automatic cloud retries are performed.
+- If preflight fails, the configured free-tier cap is reached, or the cloud request fails, the router switches to local sherpa-onnx. It never enables pay-as-you-go, buys a resource pack, or silently switches to another paid provider.
+- If local model files are unavailable, the run stops as INCOMPLETE; no Edge/Azure fallback is attempted.
+- Do not put Tencent SecretId/SecretKey in source control, narration JSON, logs or chat.
+
+### Tencent Cloud provider
+- Use the general `TextToVoice` endpoint only; do not use long-text synthesis or podcast endpoints for the free-tier path.
+- API requests are split to at most 140 characters (below Tencent's documented 150 Chinese-character request limit).
+- Credentials: `TENCENTCLOUD_SECRET_ID`, `TENCENTCLOUD_SECRET_KEY`; optional region/voice controls are in `tts_v31.env.example`.
+- The Tencent SDK is optional and imported only when a guarded cloud request is made. Install `requirements-v3.1-tts.txt` for the cloud and local providers.
+
+### Local offline provider
+- Engine: sherpa-onnx VITS, using the public Mandarin AISHELL-3 multi-speaker model package as one supported model option.
+- Install the model with `scripts/setup_local_tts_v31.ps1`, review the upstream model license, then set `SHERPA_TTS_MODEL`, `SHERPA_TTS_TOKENS`, and optional lexicon/rule paths.
+- Local inference uses CPU and does not send narration to a cloud service. The model must be downloaded before offline synthesis can run.
+
+### Runner
+- `-TtsProvider tencent` is the default. It uses Tencent only when all free-tier guards pass; otherwise it uses local sherpa-onnx.
+- `-TtsProvider local` forces offline generation.
+- `-TtsProvider edge` and `-TtsProvider azure` are retained as explicit legacy selections, not defaults.
+- Course narration and source-grounded DSU animation narration use the same selected V3.1 provider and measured phrase-timing pipeline.
+- Every run reports requested provider, actual providers, fallback events, character reservations, timing and QA. Human listening review remains required; `auto_approved=false`.
