@@ -6,6 +6,7 @@ on:
       - "feature/interactive-lesson-video-builder-v2.4*"
     paths:
       - "skills/interactive-lesson-video-builder-v2.4/**"
+      - "skills/interactive-lesson-video-builder/SKILL.md"
       - ".github/workflows/validate-interactive-lesson-video-builder-v2.4.yml"
   pull_request:
     paths:
@@ -32,6 +33,13 @@ jobs:
         run: python -m compileall -q skills/interactive-lesson-video-builder-v2.4/scripts skills/interactive-lesson-video-builder-v2.4/tests
       - name: Validate V2.4 config JSON
         run: python -c "import json,pathlib; json.loads(pathlib.Path('skills/interactive-lesson-video-builder-v2.4/config/video_ux_v2_4.json').read_text(encoding='utf-8'))"
+      - name: Parse PowerShell production runner
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile("skills/interactive-lesson-video-builder-v2.4/scripts/run_video_builder_v2_6.ps1", [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -gt 0) { $errors | ForEach-Object { Write-Error $_ }; exit 1 }
       - name: Run unit tests
         working-directory: skills/interactive-lesson-video-builder-v2.4
         run: python -m unittest discover -s tests -v
