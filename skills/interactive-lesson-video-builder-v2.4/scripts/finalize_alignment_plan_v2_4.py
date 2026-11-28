@@ -3,11 +3,17 @@ import argparse
 import json
 from pathlib import Path
 
+from compile_alignment_v2_4 import canonical_digest
+
 
 def finalize_plan(context, decisions):
     if context.get("schema_version") != "2.4.1" or decisions.get("schema_version") != "2.4.1":
         raise ValueError("Unsupported alignment context/decision schema")
-    if decisions.get("context_id") != context.get("context_id"):
+    context_payload = dict(context)
+    supplied_context_id = context_payload.pop("context_id", None)
+    if not supplied_context_id or supplied_context_id != canonical_digest(context_payload):
+        raise ValueError("Prepared alignment context fingerprint is invalid")
+    if decisions.get("context_id") != supplied_context_id:
         raise ValueError("Alignment decisions were generated for a different context")
 
     context_slides = {int(row["slide"]): row for row in context.get("slides", [])}
