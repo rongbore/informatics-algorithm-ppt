@@ -49,6 +49,7 @@ class LocalSherpaTtsTests(unittest.TestCase):
         self.tmp.cleanup()
 
     def test_required_path_rejects_missing_file(self):
+        os.environ["SHERPA_TTS_MODEL_MISSING"] = str(self.root / "does-not-exist.onnx")
         with self.assertRaisesRegex(RuntimeError, "not found"):
             local_tts._required_path("SHERPA_TTS_MODEL_MISSING")
 
