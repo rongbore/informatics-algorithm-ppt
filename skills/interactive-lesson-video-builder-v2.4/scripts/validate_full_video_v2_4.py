@@ -51,7 +51,10 @@ def read_srt(path):
 
 
 def validate_focus_report(report):
-    require(report.get("version") == "2.4.0-alpha.3", "Unexpected V2.4 QA report version")
+    require(
+        report.get("version") in ("2.4.0-alpha.3", "2.4.1-alpha.4"),
+        "Unexpected V2.4 QA report version",
+    )
     require(report.get("manual_review_required") is True, "Manual review must remain required")
     require(report.get("auto_approved") is False, "V2.4 must never auto-approve a full course")
     slides = report.get("slides")
@@ -74,22 +77,22 @@ def validate_focus_report(report):
 
         regions = row.get("focus_alignment", [])
         require(isinstance(regions, list), f"Slide {page}: focus_alignment must be a list")
-        phrase_ids = set()
-        focus_intervals = []
+        phrase_map = {}
+        unique_focus_intervals = []
         merged_here = 0
-        for region in regions:
+        for region_index, region in enumerate(regions):
+            region_id = str(region.get("region_id", region_index))
             intervals = region.get("intervals", [])
             require(isinstance(intervals, list), f"Slide {page}: region intervals must be a list")
             if region.get("reason") == "merged_duplicate_geometry":
                 merged_here += 1
                 require(not intervals, f"Slide {page}: merged duplicate region must not draw again")
-                require(
-                    int(region.get("merged_into_region_index", -1)) >= 0,
-                    f"Slide {page}: merged region has no canonical owner",
-                )
+                owner = int(region.get("merged_into_region_index", -1))
+                require(0 <= owner < region_index, f"Slide {page}: invalid merged region owner")
             for interval in intervals:
                 start, end = float(interval["start"]), float(interval["end"])
                 event_id = str(interval.get("event_id", ""))
+                phrase_text = str(interval.get("phrase_text", interval.get("phrase", "")))
                 require(
                     math.isfinite(start)
                     and math.isfinite(end)
@@ -97,15 +100,35 @@ def validate_focus_report(report):
                     f"Slide {page}: focus interval outside slide duration",
                 )
                 require(bool(event_id), f"Slide {page}: focus interval missing event ID")
-                require(event_id not in phrase_ids, f"Slide {page}: spoken phrase focused more than once")
-                phrase_ids.add(event_id)
-                focus_intervals.append((start, end, event_id))
+                if interval.get("phrase_index") is not None:
+                    phrase_key = (event_id, int(interval["phrase_index"]))
+                else:
+                    phrase_key = (event_id, phrase_text, round(start, 4), round(end, 4))
+                existing = phrase_map.get(phrase_key)
+                if existing is None:
+                    phrase_map[phrase_key] = {
+                        "start": start, "end": end, "phrase_text": phrase_text,
+                        "regions": {region_id},
+                    }
+                    unique_focus_intervals.append((start, end, phrase_key))
+                else:
+                    require(
+                        abs(existing["start"] - start) <= 0.003
+                        and abs(existing["end"] - end) <= 0.003
+                        and existing["phrase_text"] == phrase_text,
+                        f"Slide {page}: one phrase has conflicting focus intervals",
+                    )
+                    require(
+                        region_id not in existing["regions"],
+                        f"Slide {page}: duplicate phrase focus within the same region",
+                    )
+                    existing["regions"].add(region_id)
 
-        focus_intervals.sort()
-        for previous, current in zip(focus_intervals, focus_intervals[1:]):
+        unique_focus_intervals.sort(key=lambda item: (item[0], item[1]))
+        for previous, current in zip(unique_focus_intervals, unique_focus_intervals[1:]):
             require(
                 current[0] >= previous[1] - 0.003,
-                f"Slide {page}: focus intervals overlap",
+                f"Slide {page}: distinct spoken phrases have overlapping focus intervals",
             )
         require(
             int(row.get("merged_duplicate_focus_regions", 0)) == merged_here,
@@ -126,7 +149,6 @@ def validate_focus_report(report):
         "subtitle_cues": cue_total,
         "merged_duplicate_focus_regions": merged_total,
     }
-
 
 def validate_timing_record(page, timing, audio_duration, cues, expected_cues):
     require(int(timing["slide"]) == page, f"Slide {page}: timing file ID mismatch")
@@ -279,7 +301,7 @@ def validate_video(video, report, audio_dir, timings_dir, subtitle_dir, ffprobe,
         )
 
     return {
-        "version": "2.4.0-alpha.3",
+        "version": report.get("version"),
         "passed": True,
         "manual_review_required": True,
         "auto_approved": False,

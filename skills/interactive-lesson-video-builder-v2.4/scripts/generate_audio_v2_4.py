@@ -164,7 +164,7 @@ async def main_async(args):
                         await synthesize(phrase, mp3, voice, rate, pitch, volume, args.retries)
                     ensure_wav(ffmpeg, mp3, wav)
                     measured = media_duration(ffprobe, wav)
-                    speech.append({"event_id": event_id, "type": kind, "text": phrase,
+                    speech.append({"event_id": event_id, "phrase_index": phrase_index, "type": kind, "text": phrase,
                                    "start": round(cursor,3), "end": round(cursor+measured,3),
                                    "source_char_start": char_cursor,
                                    "source_char_end": char_cursor+len(compact(phrase)),
@@ -222,7 +222,7 @@ async def main_async(args):
             run([ffmpeg, "-y", "-i", str(tmp_wav), "-codec:a", "libmp3lame", "-q:a", "3", str(destination)])
             tmp_wav.unlink(missing_ok=True)
             actual_duration = media_duration(ffprobe, destination)
-            timing = {"schema_version":"2.4.0", "slide":number, "duration_seconds":round(actual_duration,3),
+            timing = {"schema_version":"2.4.1", "slide":number, "duration_seconds":round(actual_duration,3),
                       "alignment_mode":"measured_phrase_boundaries", "speech_events":speech, "pauses":pauses,
                       "thinking_difficulty":difficulty_log,
                       "limitations":["Phrase-level measured timing; not word- or phoneme-level forced alignment."]}

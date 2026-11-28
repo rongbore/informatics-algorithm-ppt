@@ -70,7 +70,7 @@ class MediaQATests(unittest.TestCase):
         report["slides"][0]["focus_alignment"].append(
             {
                 "region_index": 2,
-                "intervals": [{"start": 1.1, "end": 1.5, "event_id": "a"}],
+                "intervals": [{"start": 0.2, "end": 0.8, "event_id": "a"}],
             }
         )
         with self.assertRaises(ValueError):
@@ -113,6 +113,29 @@ class MediaQATests(unittest.TestCase):
         cues = [(0.0, 1.0, "第一句"), (1.5, 2.5, "错误字幕")]
         with self.assertRaises(ValueError):
             qa.validate_timing_record(1, timing, 3.0, cues, 2)
+
+    def test_one_phrase_can_focus_multiple_distinct_regions(self):
+        report = good_report()
+        first = report["slides"][0]["focus_alignment"][0]["intervals"][0]
+        first.update(phrase_index=0, phrase_text="看公式")
+        report["slides"][0]["focus_alignment"].append({
+            "region_index": 2,
+            "region_id": "code-region",
+            "intervals": [{
+                "start": 0.0, "end": 1.0, "event_id": "a",
+                "phrase_index": 0, "phrase_text": "看公式"
+            }],
+        })
+        result = qa.validate_focus_report(report)
+        self.assertEqual(result["slides"][0]["slide"], 1)
+
+    def test_same_phrase_cannot_be_duplicated_inside_one_region(self):
+        report = good_report()
+        first = report["slides"][0]["focus_alignment"][0]["intervals"][0]
+        first.update(phrase_index=0, phrase_text="看公式")
+        report["slides"][0]["focus_alignment"][0]["intervals"].append(dict(first))
+        with self.assertRaises(ValueError):
+            qa.validate_focus_report(report)
 
     def test_speech_pause_overlap_is_rejected(self):
         timing = {
