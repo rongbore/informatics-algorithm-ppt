@@ -202,7 +202,15 @@ foreach($file in (Get-ChildItem $fullSubs -Filter "slide_*.srt" -File|Sort-Objec
 }
 $srt=Join-Path $Root "lesson_full.srt"
 [IO.File]::WriteAllText($srt,($merged -join ($nl+$nl))+$nl,[Text.UTF8Encoding]::new($false))
-$manifest=@{version="3.0.0-beta.1";status="COMPLETE";tts_provider=$TtsProvider;azure_voice_profile=if($TtsProvider -eq "azure"){$AzureVoiceProfile}else{$null};video=(Resolve-Path $FinalVideo).Path;subtitles=(Resolve-Path $FinalSrt).Path;storyboard="build/v2_6/storyboard.json";narration="narration_script.txt";timeline="measured_timeline.csv";narration_events="build/v2_6/narration_events.json";regions="build/v2_6/regions.json";qa=if($FinalVideo -ne $fullVideo){($FinalVideo+".qa.json")}else{"qa/full/validation.json"};algorithm_animation=(Test-Path (Join-Path $Root "animations/animation_manifest.json"));manual_review_required=$true;auto_approved=$false}
+$ttsReportPath=Join-Path $Audio "tts_v31_report.json"
+$ttsActualProviders=@()
+if($TtsProvider -in @("tencent","local")){
+ NeedFile $ttsReportPath "V3.1 TTS report"
+ $ttsReport=Get-Content $ttsReportPath -Raw -Encoding UTF8|ConvertFrom-Json
+ if($ttsReport.status -ne "COMPLETE"){throw "V3.1 TTS report is incomplete; refusing COMPLETE delivery manifest."}
+ $ttsActualProviders=@($ttsReport.actual_providers)
+}
+$manifest=@{version="3.1.0";status="COMPLETE";tts_provider_requested=$TtsProvider;tts_actual_providers=$ttsActualProviders;tts_report=if($TtsProvider -in @("tencent","local")){"audio/tts_v31_report.json"}else{$null};azure_voice_profile=if($TtsProvider -eq "azure"){$AzureVoiceProfile}else{$null};video=(Resolve-Path $FinalVideo).Path;subtitles=(Resolve-Path $FinalSrt).Path;storyboard="build/v2_6/storyboard.json";narration="narration_script.txt";timeline="measured_timeline.csv";narration_events="build/v2_6/narration_events.json";regions="build/v2_6/regions.json";qa=if($FinalVideo -ne $fullVideo){($FinalVideo+".qa.json")}else{"qa/full/validation.json"};algorithm_animation=(Test-Path (Join-Path $Root "animations/animation_manifest.json"));manual_review_required=$true;auto_approved=$false}
 $manifest|ConvertTo-Json -Depth 5|Set-Content (Join-Path $Root "delivery_manifest.json") -Encoding UTF8
 $zip=Join-Path $Root "lesson_video_production_package.zip"
 if(Test-Path $zip){Remove-Item $zip -Force}
