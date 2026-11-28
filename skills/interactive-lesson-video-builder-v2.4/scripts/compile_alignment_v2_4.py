@@ -409,7 +409,7 @@ def compile_alignment(region_manifest, narration, plan, timing_dir, audio_dir,
         })
 
     return {
-        "version": "2.4.0-alpha.4",
+        "version": "2.4.1-alpha.4",
         "schema_version": "2.4.1",
         "source_fingerprints": {
             "source_pptx_sha256": region_manifest["source_pptx_sha256"],
