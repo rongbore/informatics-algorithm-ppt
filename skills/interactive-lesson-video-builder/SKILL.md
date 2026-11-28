@@ -1,66 +1,84 @@
 ---
 name: interactive-lesson-video-builder
-version: 2.5.0-alpha.1
-description: Agent-orchestrated teaching-video pipeline that automatically builds narration, visual-region mapping, measured phrase timing, synchronized focus/subtitles, rendering and fail-closed QA. V2.2/V2.3 compatibility assets are retained.
+version: 2.6.0-alpha.1
+description: Single-upload, full-course AI teaching-video production. Automatically inspects PPTX, writes narration, plans scenes, synthesizes speech, aligns verified visual regions to measured audio time, renders MP4 and reports QA.
 ---
 
 # Interactive Lesson Video Builder — Active Skill
 
-Use V2.4.1 as the validated media engine and V2.5 orchestration contract as the active end-to-end workflow. Implementations live in `../interactive-lesson-video-builder-v2.4/`; V2.2 and V2.3 assets remain preserved and must never be overwritten.
+Use the V2.4.1 source-audited media engine with the V2.6 single-upload orchestration contract. V2.2/V2.3 compatibility assets remain preserved and must never be overwritten.
 
-## User-facing behavior: one request, end-to-end execution
+## One-upload user contract
 
-When the user supplies a PPTX and asks for a teaching video, do not ask them to manually prepare narration JSON, region IDs, alignment decisions, timing files, subtitles, or command sequences. The Skill agent must create these artifacts itself, using the source deck, speaker notes, and the prompts in the versioned package.
+**Required user input: one classroom PPTX file.** When a PPTX is uploaded and the user asks for a teaching video, start the complete workflow immediately. Do not ask the user to create or upload narration JSON, slide images, region manifests, storyboards, TTS files, subtitles, timing files, or command sequences.
 
-Ask only for information that is genuinely missing and cannot be inferred (for example, the target audience or required language). Use the configured Chinese teaching defaults otherwise. Preserve the source lesson's order, facts, examples, formulas, C++ code, and teacher intent.
+Use these defaults unless the user explicitly overrides them:
+- Language: Simplified Chinese when the source is Chinese; otherwise follow the source language.
+- Audience: middle-school informatics/algorithm learners when the deck is an informatics lesson; infer other audiences from the deck.
+- Teaching voice: clear, lively, energetic competition-coach delivery; configured neural TTS voice.
+- Preserve original slide order, terminology, facts, examples, formulas, code, diagrams, constraints and teacher notes.
+- Output: full-course MP4, SRT, narration script, storyboard, measured timeline, source/alignment audit and QA report.
+- Preserve source aspect ratio; use 1080p output where practical.
+- Do not add background music by default. Never let decorative audio obscure instruction.
 
-## Agent-orchestrated pipeline
+Ask a question only if the PPTX cannot be opened or a truly blocking preference cannot be inferred. Otherwise proceed with defaults.
 
-1. **Inspect source:** inventory slide count, aspect ratio, text, speaker notes, code, formulas, diagrams, tables, teaching questions, and exercise difficulty. Create a source manifest and SHA-256 fingerprint.
-2. **Render previews:** on Windows with PowerPoint, export every slide to PNG at the original aspect ratio. Bind each preview to its slide number and image SHA-256.
-3. **Extract visual regions:** run the V2.4 native PPTX extractor. Create stable region IDs for text boxes and table cells. For image-only diagrams, graph structures, charts, and formula images, use the visual-region prompt with the exact slide preview; include only hash-bound proposals that pass a distinct visual verification pass.
-4. **Author narration:** use `prompts/lesson_narration_compiler_v2_4.md` to create narration events directly from slide content and speaker notes. Split long explanations into natural, teachable phrases. Give each event a stable unique ID and each phrase a deterministic index. Include teaching transitions, examples, recap, and student thinking prompts only when supported by the lesson. Save the JSON; do not ask the user to write it.
-5. **Generate voice:** synthesize each phrase with the configured TTS voice. Measure actual audio segment durations with FFprobe and write phrase-level timing records. Never estimate duration from character count, reading speed, slide duration, or a model-generated timestamp.
-6. **Build alignment context:** run `prepare_alignment_inputs_v2_4.py` to generate exact region/phrase records and machine-computed hashes. The model must never invent or calculate hashes.
-7. **Map and verify:** use the alignment planner to map each phrase to zero, one, or several source region IDs. Then run the independent verifier as a separate pass. A transition phrase may be unmatched. A comparison phrase may target multiple regions. Preserve all rejected candidates and reasons for audit.
-8. **Finalize and compile:** run the finalizer and compiler. The compiler is the authority: only exact source IDs, evidence quotes, verified geometry, measured phrase timings, matching fingerprints, confidence >= 0.90, and distinct planner/verifier passes may become rendered focus events.
-9. **Render:** render subtitles and focus overlays from the compiled report only. Use the measured phrase intervals; do not independently recreate a second timeline. Keep subtitles out of intentional thinking pauses. Keep numeric countdowns in their reserved non-overlapping band.
-10. **QA:** validate MP4 video/audio streams, full decode, audio durations, timing coverage, subtitle intervals, pause suppression, focus interval consistency, and geometry. Produce a machine-readable alignment audit and final QA report.
-11. **Pilot gate:** render a representative five-slide pilot (opening, concept, code/formula, worked example, exercise/recap where available). Require frame-by-frame human review for teaching correctness, legibility, highlight placement, narration pacing, and subtitle overlap before full-course rendering.
+## Fully automatic end-to-end workflow
 
-## Three-way alignment contract (non-negotiable)
+The agent orchestrates semantic authoring and independent review; the deterministic engine handles extraction, audio timing, hashes, compilation, rendering and media QA.
 
-Every visible focus event must have one auditable record linking:
-- **Visual:** source PPTX SHA-256, slide-image SHA-256, slide number, stable region ID, normalized bbox, geometry source, verification status.
-- **Speech:** narration event ID, phrase index, exact phrase text, source slide, and TTS audio file SHA-256.
-- **Time:** measured start/end seconds from the actual audio segment, timing JSON SHA-256, and FFprobe-probed media duration.
+1. **Discover and inspect input:** identify the uploaded PPTX, create a per-run output folder, inventory slide count, dimensions, notes, text, code, formulas, tables, diagrams, exercises and source language. Hash the original source. Never edit the original PPTX.
+2. **Render every slide:** use PowerPoint COM on Windows for source-faithful PNG export. Verify exported count, order, dimensions and per-slide SHA-256. If PowerPoint is unavailable, report the missing prerequisite; do not silently substitute a layout-changing converter and claim fidelity.
+3. **Extract visual regions:** run the native PPTX extractor for text boxes and table cells. Add image-only regions from slide previews through the visual-region prompt. Bind all regions to exact slide-image hashes. Stable region IDs are generated by the extractor, never invented by the model.
+4. **Author the complete lesson narration:** the Skill agent creates narration events from source slide content and speaker notes using `prompts/lesson_narration_compiler_v2_4.md`. It creates event IDs and phrase order, preserves exact identifiers/formulas/values, explains code in execution order, and adds thinking prompts only where pedagogically supported. It writes the JSON itself.
+5. **Create a complete storyboard:** classify each slide/section as concept, diagram, code, worked example, exercise, recap or transition. Specify shot type, framing, pan/zoom, visual target IDs, transition, narration event IDs and timing dependency. Do not invent camera movement where it would impair reading.
+6. **Synthesize speech:** generate each narration phrase using the configured Chinese neural TTS voice. Measure actual phrase durations with FFprobe. Retry transient failures. Save per-slide audio and timing JSON. Never infer timestamps from character count, slide duration or guessed speech rate.
+7. **Prepare machine-grounded alignment context:** run `prepare_alignment_inputs_v2_4.py`; all cryptographic hashes are computed by code, never by the model.
+8. **Plan and independently verify alignment:** the planner maps each phrase to zero, one or multiple exact region IDs. A distinct verifier checks the source quote, slide, geometry, phrase identity and semantic correspondence. Require confidence >= 0.90 for focus overlays. Preserve rejected candidates and reasons.
+9. **Compile:** run the finalizer and compiler. Only verified region/phrase/time records with matching source, image, audio and timing fingerprints can produce focus overlays. Unmatched transition phrases are valid. Ambiguous mappings remain unfocused and are listed for review; they do not block otherwise valid full-course rendering.
+10. **Automatic internal pilot:** before the full render, render a representative sample selected dynamically from the actual deck (opening, concept, code/formula, worked example, exercise/recap where available). Run machine QA and inspect sampled frames for bounds, missing assets, subtitle collision and media integrity. This is an internal gate, not a user approval step. If the pilot has a deterministic technical failure, repair/retry automatically; if unresolved, stop with a diagnostic package.
+11. **Render the entire deck automatically:** after the internal pilot passes deterministic checks, render all slides without waiting for user confirmation. Generate subtitles and focus overlays from the compiled alignment report only. Use measured phrase intervals; suppress subtitles during thinking pauses. Preserve original slide order and aspect ratio.
+12. **Algorithm animation:** create dynamic algorithm scenes only when a source-grounded, machine-readable state trace is available and independently validated. A trace must include initial state, every operation, state before/after, invariants and final state. Validate each transition against the supplied code/problem semantics. If a valid trace cannot be established, use the original slide plus verified focus/zoom; never fabricate node, array, DP or graph states.
+13. **Full media QA:** verify video/audio streams, full decode, slide coverage/order, duration, timing coverage/non-overlap, subtitle intervals, pause suppression, focus ownership, geometry bounds, source hashes and audio-video duration consistency. Generate a machine-readable report and a human review checklist.
+14. **Package and deliver:** provide the MP4 and one ZIP containing all production assets. Also provide standalone narration, storyboard, SRT, timeline, alignment audit and QA report. Report all limitations and unresolved slides.
 
-All three must share the same slide, event, phrase, and source context. Renderer input is the compiled alignment report, never a freehand timeline. Subtitles use the same speech interval; focus overlays use the corresponding verified visual mapping. Store source IDs in the QA report so any rendered rectangle can be traced back to the source PPTX and spoken phrase.
+## Three-way alignment contract
 
-## Fail-closed rules
+Every visible focus event links all three sources:
+- **Visual:** PPTX SHA-256, slide-image SHA-256, slide number, stable region ID, normalized bbox, geometry source and independent verification status.
+- **Speech:** narration event ID, phrase index, exact phrase, source slide and TTS audio SHA-256.
+- **Time:** actual measured start/end seconds, timing JSON SHA-256 and FFprobe duration.
 
-- No guessed timestamps, slide-duration ratios, character-count timing, nearest-text fallback, or fuzzy matching promoted directly to render.
+All identifiers and fingerprints must agree. Subtitles and focus overlays derive from the same measured phrase interval. Renderer input is the compiled report, never a freehand timeline.
+
+## Reliability and fallback policy
+
+- No guessed timestamps, slide-duration ratios, character-count timing, nearest-text fallback or unverified fuzzy matches.
 - No stale source/audio/timing/slide-image hashes.
-- No unverified or unsupported geometry.
-- No automatic focus for ambiguous matches or confidence below 0.90.
-- No fabricated narration facts, examples, code behavior, or algorithm states.
-- No algorithm-state animation unless a separate validated state trace supplies every state and transition.
-- If a check fails, stop the affected slide, retain diagnostic output, and regenerate only from the changed source. Do not silently downgrade to a weaker alignment method.
-- Machine QA passing does not mean semantic correctness. Always set `manual_review_required=true` and `auto_approved=false`.
+- No focus overlay for ambiguous, unsupported or confidence-below-0.90 geometry.
+- A failed visual mapping degrades only that phrase to the original unhighlighted slide; it must not invent a focus target.
+- A failed algorithm-state trace degrades to the source slide and narration, with the animation marked unavailable.
+- Retry transient TTS/render failures with bounded retries. Never silently omit a slide.
+- If a slide cannot be narrated or rendered after retries, stop final release and deliver diagnostics/partial artifacts clearly marked INCOMPLETE; do not label it a complete video.
+- Machine QA passing does not prove instructional correctness. Always set `manual_review_required=true` and `auto_approved=false`, but do not require the user to approve a pilot before generating the full draft.
 
 ## Output package
 
-Produce, at minimum:
+At minimum produce:
 - source manifest and slide previews;
 - native/verified visual-region manifest;
-- narration event JSON;
+- narration event JSON and readable narration document;
+- storyboard JSON/CSV;
 - per-phrase audio and measured timing JSON;
-- alignment context, draft decisions, independent verification, finalized plan;
-- compiled alignment report;
-- rendered MP4 and SRT subtitles;
-- alignment audit and final media QA report;
-- a concise pilot review checklist and unresolved-item list.
+- alignment context, planner decisions, independent verification, finalized plan and compiled alignment report;
+- full-course MP4 and SRT subtitles;
+- alignment audit, QA report and unresolved-item/review checklist;
+- ZIP containing all deliverables.
+
+## Runtime prerequisites and truthful status
+
+The Skill must check prerequisites at run start: Python 3.10+, PowerPoint on Windows for source-faithful export, FFmpeg/FFprobe, required Python packages, TTS network availability and sufficient disk space. Explain any missing prerequisite with the exact remediation. Do not claim a stage ran unless its output and validation exist.
 
 ## Version isolation
 
-V2.2 and V2.3 scripts, outputs, caches, and historical artifacts remain intact. V2.4 is the validated alignment/render/QA engine. V2.5 changes orchestration and workflow behavior; it must not silently replace the underlying engine or weaken its checks.
+V2.2 and V2.3 scripts, outputs, caches and historical artifacts remain intact. V2.4 remains the source-audited engine. V2.6 changes the user workflow to single-upload, full-course automatic production without weakening the engine's integrity checks.
