@@ -51,7 +51,7 @@ def fixture(directory, phrase_one_targets=None, first_confidence=0.98):
         ]}],
     }
     timing = {
-        "schema_version": "2.4.0", "slide": 1, "duration_seconds": 3.0,
+        "schema_version": "2.4.1", "slide": 1, "duration_seconds": 3.0,
         "speech_events": [
             {"event_id": "s001_e01", "phrase_index": 0, "type": "narration",
              "text": first_text, "start": 0.0, "end": 1.0},
