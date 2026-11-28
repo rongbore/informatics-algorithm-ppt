@@ -214,7 +214,10 @@ def extract_regions(pptx_path, slides_dir=None, vision_plan_path=None):
                 confirmed = (
                     confidence >= 0.90
                     and verification.get("status") == "confirmed"
+                    and bool(str(verification.get("planner_pass", "")).strip())
                     and bool(str(verification.get("reviewer_pass", "")).strip())
+                    and str(verification.get("planner_pass", "")).strip()
+                        != str(verification.get("reviewer_pass", "")).strip()
                 )
                 add_region(
                     slide_index[number]["regions"], number, region_id, None,
