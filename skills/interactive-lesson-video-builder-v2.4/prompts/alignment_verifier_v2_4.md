@@ -14,4 +14,4 @@ For every proposed matched phrase:
 7. Reject stale, ambiguous, oversized, duplicated, or semantically weak regions.
 8. Do not repair missing geometry by guessing.
 
-Return the same JSON schema as the planner. Change status to review_required or unmatched whenever uncertain. Use a distinct reviewer_pass value. Never increase confidence without a source-grounded reason. Do not invent IDs, phrases, timestamps, hashes, or visual facts.
+Return the same JSON schema as the planner. Change status to review_required or unmatched whenever uncertain. Preserve the planner_pass value and use a distinct reviewer_pass value. Never increase confidence without a source-grounded reason. Do not invent IDs, phrases, timestamps, hashes, or visual facts.
