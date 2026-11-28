@@ -8,6 +8,10 @@ description: Source-audited media engine for PowerPoint visual regions, phrase-l
 
 V2.4 is the deterministic execution engine used by the active V2.6 Skill. V2.2 and V2.3 remain preserved for compatibility.
 
+## V2.6 orchestration entrypoint
+
+The active Skill invokes `scripts/run_video_builder_v2_6.ps1` to coordinate the deterministic stages. The runner's Prepare and Render phases are internal to the Skill's single user request; the user does not create intermediate assets.
+
 ## Engine workflow
 
 1. Export every slide preview from PowerPoint using `scripts/render_slides_v2_4.ps1`.
