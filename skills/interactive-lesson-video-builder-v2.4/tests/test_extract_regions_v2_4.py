@@ -42,6 +42,20 @@ class SlideRegionExtractionTests(unittest.TestCase):
             self.assertEqual(cells[0]["text"], "左区间")
             self.assertTrue(all(x["mapping_eligible"] for x in cells))
 
+    def test_rotated_text_geometry_is_not_auto_eligible(self):
+        with tempfile.TemporaryDirectory() as directory:
+            pptx = Path(directory) / "rotated.pptx"
+            prs = Presentation()
+            slide = prs.slides.add_slide(prs.slide_layouts[6])
+            box = slide.shapes.add_textbox(Inches(1), Inches(1), Inches(4), Inches(1))
+            box.text = "旋转文本区域"
+            box.rotation = 25
+            prs.save(pptx)
+            manifest = extractor.extract_regions(pptx)
+            region = next(x for x in manifest["slides"][0]["regions"] if x["shape_id"] == box.shape_id)
+            self.assertFalse(region["mapping_eligible"])
+            self.assertEqual(region["geometry_status"], "rotated_shape_review_required")
+
     def test_vision_regions_require_matching_slide_hash_and_second_pass(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
