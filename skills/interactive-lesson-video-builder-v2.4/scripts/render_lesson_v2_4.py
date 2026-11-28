@@ -150,7 +150,7 @@ def validate_alignment_report(report):
 
 
 
-def load_storyboard(path, slide_map, expected_source_hash=None):
+def load_storyboard(path, slide_map, expected_source_hash=None, selected_slides=None):
     """Load source-grounded shot plans and reject stale or unknown references."""
     if not path:
         return {}
@@ -174,8 +174,12 @@ def load_storyboard(path, slide_map, expected_source_hash=None):
     allowed_transitions = {"cut", "short_dissolve", "none"}
     for row in rows:
         page = int(row["slide"])
-        if page not in slide_map or page in plans:
-            raise ValueError(f"Storyboard contains unknown or duplicate slide {page}")
+        if page in plans:
+            raise ValueError(f"Storyboard contains duplicate slide {page}")
+        if page not in slide_map:
+            if selected_slides is not None and page not in selected_slides:
+                continue
+            raise ValueError(f"Storyboard contains unknown slide {page}")
         shots = row.get("shots") or []
         if not shots:
             raise ValueError(f"Storyboard slide {page} contains no shots")
@@ -204,9 +208,10 @@ def load_storyboard(path, slide_map, expected_source_hash=None):
             "shot_count": len(shots),
             "selected_region_id": next(iter(shot.get("region_ids", [])), None),
         }
-    if set(plans) != set(slide_map):
-        missing = sorted(set(slide_map) - set(plans))
-        raise ValueError(f"Storyboard does not cover every source slide: {missing}")
+    required_slides = set(selected_slides) if selected_slides is not None else set(slide_map)
+    if not required_slides.issubset(plans):
+        missing = sorted(required_slides - set(plans))
+        raise ValueError(f"Storyboard does not cover every rendered source slide: {missing}")
     return plans
 
 def camera_crop(plan, row, width, content_height, offset_x, offset_y,
@@ -349,11 +354,12 @@ def main():
     config = json.loads(Path(args.ux_config).read_text(encoding="utf-8-sig"))
     alignment_report = json.loads(Path(args.alignment_report).read_text(encoding="utf-8-sig"))
     slide_map = validate_alignment_report(alignment_report)
+    selected = set(args.only_slides or [])
     storyboard = load_storyboard(
         args.storyboard, slide_map,
         alignment_report.get("source_fingerprints", {}).get("source_pptx_sha256"),
+        selected or None,
     )
-    selected = set(args.only_slides or [])
     if selected and not selected <= set(slide_map):
         raise SystemExit("Requested slide is absent from compiled alignment")
 
