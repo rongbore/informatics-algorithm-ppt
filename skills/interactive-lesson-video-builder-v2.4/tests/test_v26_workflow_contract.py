@@ -19,7 +19,7 @@ class V26WorkflowContractTests(unittest.TestCase):
         for token in ("ValidateSet(\"Prepare\",\"Render\")", "generate_audio_v2_4.py",
                       "prepare_alignment_inputs_v2_4.py", "finalize_alignment_plan_v2_4.py",
                       "compile_alignment_v2_4.py", "render_lesson_v2_4.py",
-                      "validate_full_video_v2_4.py", "lesson_video_production_package.zip"):
+                      "validate_full_video_v2_4.py", "lesson_video_production_package.zip", "narration_script.txt", "measured_timeline.csv", "INCOMPLETE"):
             self.assertIn(token, runner)
 
     def test_storyboard_prompt_exists_and_active_skill_uses_runner(self):
