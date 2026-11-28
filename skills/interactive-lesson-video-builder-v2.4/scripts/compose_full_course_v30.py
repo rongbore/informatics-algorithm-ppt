@@ -74,9 +74,9 @@ def compose(base,timing_dir,chapter_dir,chapter_timing_dir,slide_srt_dir,out,srt
     phrases=event.get('phrases',[])
     if phrases:
      for phrase in phrases:
-      subtitles.append(f'{seq}\\n{stamp(local+phrase["start"])} --> {stamp(local+phrase["end"])}\\n{phrase["text"]}');seq+=1
+      subtitles.append(f'{seq}\n{stamp(local+phrase["start"])} --> {stamp(local+phrase["end"])}\n{phrase["text"]}');seq+=1
     else:
-     subtitles.append(f'{seq}\\n{stamp(local+event["start"])} --> {stamp(local+event["end"])}\\n{event["text"]}');seq+=1
+     subtitles.append(f'{seq}\n{stamp(local+event["start"])} --> {stamp(local+event["end"])}\n{event["text"]}');seq+=1
    inserted+=float(timing['duration_seconds'])
  Path(srt_out).parent.mkdir(parents=True,exist_ok=True)
  Path(srt_out).write_text('\n\n'.join(subtitles)+'\n',encoding='utf-8')
