@@ -39,4 +39,7 @@ class PhraseSplitTests(unittest.TestCase):
   self.assertTrue(all(len(x)<=140 for x in phrases))
  def test_short_text_preserved(self):
   self.assertEqual(generator.split_phrases("并查集。"),["并查集。"])
+ def test_sentence_boundaries_are_preserved(self):
+  phrases=generator.split_phrases("先合并集合。再查找根节点！")
+  self.assertEqual(phrases,["先合并集合。","再查找根节点！"])
 if __name__=="__main__":unittest.main()
