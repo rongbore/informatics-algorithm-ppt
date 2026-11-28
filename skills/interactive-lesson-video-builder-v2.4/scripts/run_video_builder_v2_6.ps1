@@ -83,25 +83,27 @@ Run $python @($compile,"--regions",$Regions,"--narration",$Narration,"--alignmen
 $m=Get-Content $Regions -Raw -Encoding UTF8|ConvertFrom-Json
 $rows=@($m.slides)
 $pilot=[Collections.Generic.List[int]]::new()
-$groups=@(
- @("课程目标","学习目标","本节课","导入"),
- @("定义","概念","原理","性质","知识点"),
- @("#include","int main","vector","cout","cin","代码"),
- @("例题","样例","模拟","推导","输入","输出"),
- @("练习","思考","总结","小结","作业")
+$patterns=@(
+ "课程目标|学习目标|本节课|导入",
+ "定义|概念|原理|性质|知识点",
+ "#include|int main|vector|cout|cin|代码",
+ "例题|样例|模拟|推导|输入|输出",
+ "练习|思考|总结|小结|作业"
 )
-foreach($group in $groups){
+foreach($pattern in $patterns){
  $winner=$null;$best=0
  foreach($row in $rows){
-  $n=[int]$row.slide;if($pilot.Contains($n)){continue}
-  $txt=(@($row.regions|ForEach-Object{$_.text}) -join " ");$score=0
-  foreach($word in $group){if($txt.Contains($word)){$score++}}
+  $n=[int]$row.slide
+  if($pilot.Contains($n)){continue}
+  $txt=(@($row.regions|ForEach-Object{$_.text}) -join " ")
+  $score=([regex]::Matches($txt,$pattern)).Count
   if($score -gt $best){$best=$score;$winner=$n}
  }
  if($null -ne $winner){$pilot.Add([int]$winner)}
 }
 foreach($n in @(1,[Math]::Ceiling($rows.Count*.25),[Math]::Ceiling($rows.Count*.5),[Math]::Ceiling($rows.Count*.75),$rows.Count)){
- if($pilot.Count -ge 5){break};if(-not $pilot.Contains([int]$n)){$pilot.Add([int]$n)}
+ if($pilot.Count -ge 5){break}
+ if(-not $pilot.Contains([int]$n)){$pilot.Add([int]$n)}
 }
 $pilot=@($pilot|Sort-Object|Select-Object -First 5)
 $pilotCompiled=Join-Path $Build "compiled_alignment_pilot.json"
