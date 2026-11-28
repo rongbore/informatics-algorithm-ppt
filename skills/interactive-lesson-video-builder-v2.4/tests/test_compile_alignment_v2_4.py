@@ -105,7 +105,16 @@ def fixture(directory, phrase_one_targets=None, first_confidence=0.98):
         "audio_sha256": {"1": compiler.sha256_file(audio_path)},
         "slides": [{"slide": 1, "phrases": [phrase_one, phrase_two]}],
     }
+    refresh_plan_digest(plan)
     return manifest, narration, plan, timing_dir, audio_dir
+
+
+def refresh_plan_digest(plan):
+    plan["decisions_sha256"] = compiler.canonical_digest({
+        "schema_version": plan["schema_version"],
+        "context_id": plan["context_id"],
+        "slides": plan["slides"],
+    })
 
 
 class AlignmentCompilerTests(unittest.TestCase):
@@ -160,6 +169,7 @@ class AlignmentCompilerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             data = list(fixture(directory))
             data[2]["slides"][0]["phrases"][0]["phrase_text"] = "改过的句子"
+            refresh_plan_digest(data[2])
             with self.assertRaises(ValueError):
                 self.compile(tuple(data))
 
@@ -192,6 +202,7 @@ class AlignmentCompilerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             data = list(fixture(directory))
             data[2]["slides"][0]["phrases"][0]["verification"]["status"] = "needs_review"
+            refresh_plan_digest(data[2])
             with self.assertRaises(ValueError):
                 self.compile(tuple(data))
 
@@ -199,6 +210,7 @@ class AlignmentCompilerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             data = list(fixture(directory))
             data[2]["slides"][0]["phrases"].pop()
+            refresh_plan_digest(data[2])
             with self.assertRaises(ValueError):
                 self.compile(tuple(data))
 
@@ -208,6 +220,7 @@ class AlignmentCompilerTests(unittest.TestCase):
             row = data[2]["slides"][0]["phrases"][0]
             row.update(status="unmatched", region_ids=[], mapping_basis="unmatched",
                        evidence=[], confidence=0, reason="No reliable visual target")
+            refresh_plan_digest(data[2])
             result = self.compile(tuple(data))
             self.assertEqual(result["unmatched_phrase_count"], 1)
             self.assertFalse(any(x["region_id"] == "s001_sh10" for x in result["slides"][0]["regions"]))
