@@ -246,7 +246,9 @@ def compile_alignment(region_manifest, narration, plan, timing_dir, audio_dir,
 
         canonical_regions, canonical_by_key, aliases = {}, {}, {}
         for region_id, region in region_by_id.items():
-            validate_region(region, page) if region.get("mapping_eligible") else None
+            if not region.get("mapping_eligible"):
+                continue
+            validate_region(region, page)
             key = region_geometry_key(region)
             if key not in canonical_by_key:
                 canonical_id = region_id
@@ -304,6 +306,11 @@ def compile_alignment(region_manifest, narration, plan, timing_dir, audio_dir,
                 )
                 evidence_rows = mapping.get("evidence", [])
                 evidence_by_region = {x.get("region_id"): x for x in evidence_rows}
+                require(
+                    len(evidence_by_region) == len(evidence_rows)
+                    and set(evidence_by_region) == set(region_ids),
+                    f"Slide {page}: evidence must cover each target region exactly once",
+                )
                 for region_id in region_ids:
                     require(region_id in region_by_id,
                             f"Slide {page}: mapping references unknown region {region_id}")
@@ -342,6 +349,10 @@ def compile_alignment(region_manifest, narration, plan, timing_dir, audio_dir,
                     })
                 matched_phrases += 1
             elif status == "review_required":
+                require(
+                    all(region_id in region_by_id for region_id in region_ids),
+                    f"Slide {page}: review candidate references unknown region",
+                )
                 review_phrases += 1
                 review_rows.append({
                     "event_id": key[0], "phrase_index": key[1],
@@ -433,7 +444,6 @@ def main():
     parser.add_argument("--audio-dir", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--slides", nargs="*", type=int)
-    parser.add_argument("--ffprobe")
     args = parser.parse_args()
 
     result = compile_alignment(
