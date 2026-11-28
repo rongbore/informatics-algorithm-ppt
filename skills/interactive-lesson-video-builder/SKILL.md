@@ -17,11 +17,24 @@ Use these defaults unless the user explicitly overrides them:
 - Audience: middle-school informatics/algorithm learners when the deck is an informatics lesson; infer other audiences from the deck.
 - Teaching voice: clear, lively, energetic competition-coach delivery; configured neural TTS voice.
 - Preserve original slide order, terminology, facts, examples, formulas, code, diagrams, constraints and teacher notes.
-- Output: full-course MP4, SRT, narration script, storyboard, measured timeline, source/alignment audit and QA report.
+- Output: full-course MP4, SRT, narration script, storyboard, measured timeline, source/alignment audit, QA report and a ZIP production package.
 - Preserve source aspect ratio; use 1080p output where practical.
 - Do not add background music by default. Never let decorative audio obscure instruction.
 
 Ask a question only if the PPTX cannot be opened or a truly blocking preference cannot be inferred. Otherwise proceed with defaults.
+
+## Executable production workflow
+
+The active Skill must invoke `scripts/run_video_builder_v2_6.ps1` in the V2.4 engine directory. The user still supplies only the PPTX; narration JSON, verified alignment decisions and storyboard JSON are authored internally by the Skill agent and stored in the run workspace.
+
+1. Create a unique run workspace for the uploaded PPTX.
+2. Inspect the complete deck and write the narration event JSON using `prompts/lesson_narration_compiler_v2_4.md`.
+3. Invoke the runner with `-Phase Prepare`, the PPTX, workspace and agent-authored narration JSON. This exports slides, extracts native regions, generates TTS and measured timing, and prepares the machine-hashed alignment context.
+4. Read the alignment context and matching slide previews. Use the alignment planner and independent verifier prompts to create the verified alignment decisions JSON. Use `prompts/storyboard_compiler_v2_6.md` to author the storyboard JSON. The user must not be asked to prepare these files.
+5. Invoke the runner with `-Phase Render`, the same PPTX/workspace, and the internally generated decisions/storyboard. It finalizes and compiles alignment, renders and validates an internal representative pilot, then renders and validates the full course, merges SRT captions and packages the production ZIP.
+6. Verify that the delivery manifest says `status=COMPLETE`, both final MP4 and ZIP exist, and the full validation report exists before presenting download links. If any required stage fails, report `INCOMPLETE` and deliver diagnostics only; never claim completion.
+
+The two runner phases are internal orchestration steps, not separate user tasks. The Skill agent must carry them through in one request.
 
 ## Fully automatic end-to-end workflow
 
