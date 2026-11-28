@@ -45,6 +45,7 @@ See README.md for commands and prompts. The Skill agent should execute these ste
 
 ## QA and release gates
 
+- Recompute and compare slide-image, audio and timing-file SHA-256 values again immediately before rendering; refuse stale or mixed-source inputs.
 - Check all source, region, narration, timing and audio fingerprints.
 - Check interval coverage, non-overlap, geometry bounds, focus ownership, subtitles, stream metadata and full media decode.
 - Machine QA must report manual_review_required=true and auto_approved=false.
