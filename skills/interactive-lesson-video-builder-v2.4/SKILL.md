@@ -25,11 +25,13 @@ Never infer focus time from slide-duration ratios, character counts, or guessed 
 3. For diagrams, graph nodes/edges, image-only formulas, and other non-text regions, use prompts/visual_region_extraction_v2_4.md. Re-run extraction with the image-hash-bound vision plan. Regions without a confirmed second visual pass remain ineligible for automatic focus.
 4. Create narration events using stable, unique event IDs. Preserve source phrases; do not add unsupported facts or examples.
 5. Generate TTS and measured phrase timings with scripts/generate_audio_v2_4.py. Each phrase timing record includes event_id, phrase_index, exact phrase text, start, and end.
-6. Use prompts/alignment_planner_v2_4.md to map each measured phrase to zero, one, or multiple region IDs. Use prompts/alignment_verifier_v2_4.md as a separate second pass.
-7. Compile the plan with scripts/compile_alignment_v2_4.py. It checks PPTX/region, narration, timing, and audio fingerprints; slide/event/phrase identity; source evidence quotes; normalized geometry; confidence; verification status; and interval integrity.
-8. Render only the compiled report with scripts/render_lesson_v2_4.py. One phrase may map to several distinct regions; several phrases may map to one region. Duplicate physical geometry is consolidated.
-9. Run scripts/validate_full_video_v2_4.py against the final MP4, all per-slide audio, timing JSON, and SRT files.
-10. Render a five-slide pilot first. Inspect the actual video and audio before authorizing a full-course render.
+6. Prepare machine-computed context and hashes with scripts/prepare_alignment_inputs_v2_4.py.
+7. Use prompts/alignment_planner_v2_4.md to map each measured phrase to zero, one, or multiple region IDs. Use prompts/alignment_verifier_v2_4.md as a separate second pass.
+8. Finalize the verified decisions with scripts/finalize_alignment_plan_v2_4.py; never ask the model to calculate SHA-256 values.
+9. Compile the plan with scripts/compile_alignment_v2_4.py. It checks PPTX/region, narration, timing, and audio fingerprints; slide/event/phrase identity; source evidence quotes; normalized geometry; confidence; verification status; and interval integrity.
+10. Render only the compiled report with scripts/render_lesson_v2_4.py. One phrase may map to several distinct regions; several phrases may map to one region. Duplicate physical geometry is consolidated.
+11. Run scripts/validate_full_video_v2_4.py against the final MP4, all per-slide audio, timing JSON, and SRT files.
+12. Render a five-slide pilot first. Inspect the actual video and audio before authorizing a full-course render.
 
 ## Automatic matching policy
 - Native PowerPoint text and table-cell geometry is preferred over inferred coordinates.
