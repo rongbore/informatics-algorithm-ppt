@@ -43,7 +43,7 @@ def decisions():
                 "region_ids": ["s001_sh10"],
                 "mapping_basis": "semantic",
                 "confidence": 0.97,
-                "verification": {"status": "confirmed", "reviewer_pass": "independent-pass"},
+                "verification": {"status": "confirmed", "planner_pass": "planner-pass", "reviewer_pass": "independent-pass"},
                 "evidence": [{
                     "region_id": "s001_sh10",
                     "region_quote": "dp[i]",
