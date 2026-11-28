@@ -288,7 +288,8 @@ def align_slide(item, narration_slide, timing, duration, anchors, min_confidence
             continue
 
         if owner_row["intervals"]:
-            owner_row["mode"] = mode if not owner_row.get("mode") else owner_row["mode"]
+            if owner_row["mode"] == "unmatched":
+                owner_row["mode"] = mode
             owner_row["reason"] = (
                 "one_region_per_phrase" if len(owner_row["intervals"]) < len(matches) else "matched"
             )
