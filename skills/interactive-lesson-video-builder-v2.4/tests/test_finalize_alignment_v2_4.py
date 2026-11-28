@@ -5,12 +5,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import finalize_alignment_plan_v2_4 as finalizer
+from compile_alignment_v2_4 import canonical_digest
 
 
 def context():
-    return {
+    value = {
         "schema_version": "2.4.1",
-        "context_id": "context-sha",
         "region_manifest_sha256": "regions-sha",
         "narration_sha256": "narration-sha",
         "timing_sha256": {"1": "timing-sha"},
@@ -24,12 +24,14 @@ def context():
             }],
         }],
     }
+    value["context_id"] = canonical_digest(value)
+    return value
 
 
 def decisions():
     return {
         "schema_version": "2.4.1",
-        "context_id": "context-sha",
+        "context_id": context()["context_id"],
         "slides": [{
             "slide": 1,
             "phrases": [{
