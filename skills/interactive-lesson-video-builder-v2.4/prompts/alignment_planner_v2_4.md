@@ -47,9 +47,8 @@ Return JSON only:
       "mapping_basis": "semantic",
       "confidence": 0.96,
       "verification": {
-        "status": "confirmed",
-        "planner_pass": "planner-pass-1",
-        "reviewer_pass": "independent-review-pass-1"
+        "status": "pending",
+        "planner_pass": "planner-pass-1"
       },
       "evidence": [{
         "region_id": "s001_sh12",
