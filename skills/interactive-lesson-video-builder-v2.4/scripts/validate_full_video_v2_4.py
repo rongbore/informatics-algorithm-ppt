@@ -301,7 +301,7 @@ def validate_video(video, report, audio_dir, timings_dir, subtitle_dir, ffprobe,
         )
 
     return {
-        "version": "2.4.0-alpha.3",
+        "version": report.get("version"),
         "passed": True,
         "manual_review_required": True,
         "auto_approved": False,
