@@ -61,6 +61,14 @@ class AlignmentFinalizerTests(unittest.TestCase):
         self.assertEqual(result["region_manifest_sha256"], "regions-sha")
         self.assertEqual(result["timing_sha256"]["1"], "timing-sha")
         self.assertEqual(result["audio_sha256"]["1"], "audio-sha")
+        self.assertEqual(
+            result["decisions_sha256"],
+            canonical_digest({
+                "schema_version": result["schema_version"],
+                "context_id": result["context_id"],
+                "slides": result["slides"],
+            }),
+        )
 
     def test_context_id_mismatch_is_rejected(self):
         rows = decisions()
