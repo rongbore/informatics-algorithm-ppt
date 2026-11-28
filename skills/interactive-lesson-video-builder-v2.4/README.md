@@ -40,6 +40,14 @@ Install:
     video/
     qa_v2_4/
 
+## Step 0 — Render slide previews automatically on Windows
+
+With Microsoft PowerPoint installed, export slide images at the source deck's aspect ratio:
+
+    powershell -ExecutionPolicy Bypass -File scripts/render_slides_v2_4.ps1 -Pptx input/lesson.pptx -OutputDir rendered/slides
+
+The script opens the PPTX read-only, exports one PNG per slide, and names them slide_001.png, slide_002.png, etc. It does not modify the source deck.
+
 ## Step 1 — Extract native PPTX regions
 
     python scripts/extract_slide_regions_v2_4.py --pptx input/lesson.pptx --slides-dir rendered/slides --output build/v2_4/regions_native.json
