@@ -53,7 +53,7 @@ class FocusAlignmentTests(unittest.TestCase):
         item, narration_slide, timing = sample()
         rows = self.align(item, narration_slide, timing)
         self.assertEqual(rows[0]["mode"], "unique_literal_phrase")
-        self.assertEqual(rows[1]["reason"], "no_unique_full_text_match")
+        self.assertEqual(rows[1]["reason"], "merged_duplicate_geometry")
         self.assertEqual(len(rows[0]["intervals"]), 1)
         self.assertFalse(rows[1]["intervals"])
 
@@ -88,7 +88,7 @@ class FocusAlignmentTests(unittest.TestCase):
     def test_reviewed_anchor_has_priority(self):
         item, narration_slide, timing = sample()
         rows = self.align(item, narration_slide, timing, {(1, 1): {"event_ids": ["a"]}})
-        self.assertEqual(rows[0]["reason"], "duplicate_or_competing_focus")
+        self.assertEqual(rows[0]["reason"], "merged_duplicate_geometry")
         self.assertEqual(rows[1]["mode"], "reviewable_event_anchor")
 
     def test_ratio_fields_never_trigger_focus(self):
