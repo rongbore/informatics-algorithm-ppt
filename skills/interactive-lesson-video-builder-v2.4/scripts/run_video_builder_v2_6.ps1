@@ -27,6 +27,16 @@ $Videos=Join-Path $Root "video"
 $Qa=Join-Path $Root "qa"
 $Font="C:\Windows\Fonts\msyh.ttc"
 
+trap {
+ $failure=$_.Exception.Message
+ try {
+  $failed=@{version="2.6.0";status="INCOMPLETE";generated_at=(Get-Date).ToString("o");error=$failure;manual_review_required=$true;auto_approved=$false}
+  $failed|ConvertTo-Json -Depth 5|Set-Content (Join-Path $Root "delivery_manifest.json") -Encoding UTF8
+ } catch {}
+ Write-Host ("INCOMPLETE: "+$failure) -ForegroundColor Red
+ exit 1
+}
+
 function NeedFile($p,$label){if(-not(Test-Path -LiteralPath $p -PathType Leaf)){throw "$label missing: $p"}}
 function Mkdir($p){New-Item -ItemType Directory -Force -Path $p|Out-Null}
 function Run($exe,[string[]]$Arguments,$label){
@@ -109,6 +119,32 @@ $fullQa=Join-Path $Qa "full"
 Run $python @($validate,"--video",$fullVideo,"--qa-report",(Join-Path $fullQa "qa_report_v2_4_alpha4.json"),"--audio-dir",$Audio,"--timings-dir",$Timings,"--subtitle-dir",$fullSubs,"--output",(Join-Path $fullQa "validation.json")) "Validate full course"
 
 # Merge slide-level SRT files while renumbering cues.
+# Export a readable teacher script and a measured phrase/pause timeline.
+$narrationData=Get-Content $Narration -Raw -Encoding UTF8|ConvertFrom-Json
+$narrationLines=[Collections.Generic.List[string]]::new()
+foreach($slide in $narrationData.slides){
+ $narrationLines.Add(("第"+$slide.slide+"页"))
+ foreach($event in $slide.events){
+  if($event.type -eq "pause"){continue}
+  $narrationLines.Add(("["+[string]$event.type+"] "+[string]$event.text))
+ }
+ $narrationLines.Add("")
+}
+$narrationText=Join-Path $Root "narration_script.txt"
+[IO.File]::WriteAllLines($narrationText,$narrationLines,[Text.UTF8Encoding]::new($false))
+$timelineRows=[Collections.Generic.List[object]]::new()
+foreach($timingFile in (Get-ChildItem $Timings -Filter "slide_*.json" -File|Sort-Object Name)){
+ $timing=Get-Content $timingFile.FullName -Raw -Encoding UTF8|ConvertFrom-Json
+ foreach($event in $timing.speech_events){
+  $timelineRows.Add([pscustomobject]@{slide=$timing.slide;event_id=$event.event_id;phrase_index=$event.phrase_index;kind=$event.type;text=$event.text;start_seconds=$event.start;end_seconds=$event.end})
+ }
+ foreach($pause in $timing.pauses){
+  $timelineRows.Add([pscustomobject]@{slide=$timing.slide;event_id=$pause.event_id;phrase_index=$null;kind=("pause_"+$pause.kind);text="";start_seconds=$pause.start;end_seconds=$pause.end})
+ }
+}
+$timelineCsv=Join-Path $Root "measured_timeline.csv"
+$timelineRows|Sort-Object slide,start_seconds|Export-Csv -LiteralPath $timelineCsv -NoTypeInformation -Encoding UTF8
+
 $nl=[Environment]::NewLine;$merged=[Collections.Generic.List[string]]::new();$index=1
 foreach($file in (Get-ChildItem $fullSubs -Filter "slide_*.srt" -File|Sort-Object Name)){
  $blocks=(Get-Content $file.FullName -Raw -Encoding UTF8)-split "(?:\r?\n){2,}"
@@ -119,7 +155,7 @@ foreach($file in (Get-ChildItem $fullSubs -Filter "slide_*.srt" -File|Sort-Objec
 }
 $srt=Join-Path $Root "lesson_full.srt"
 [IO.File]::WriteAllText($srt,($merged -join ($nl+$nl))+$nl,[Text.UTF8Encoding]::new($false))
-$manifest=@{version="2.6.0";status="COMPLETE";video="video/lesson_full.mp4";subtitles="lesson_full.srt";storyboard="build/v2_6/storyboard.json";narration="build/v2_6/narration_events.json";qa="qa/full/validation.json";manual_review_required=$true;auto_approved=$false}
+$manifest=@{version="2.6.0";status="COMPLETE";video="video/lesson_full.mp4";subtitles="lesson_full.srt";storyboard="build/v2_6/storyboard.json";narration="narration_script.txt";timeline="measured_timeline.csv";narration_events="build/v2_6/narration_events.json";regions="build/v2_6/regions.json";qa="qa/full/validation.json";manual_review_required=$true;auto_approved=$false}
 $manifest|ConvertTo-Json -Depth 5|Set-Content (Join-Path $Root "delivery_manifest.json") -Encoding UTF8
 $zip=Join-Path $Root "lesson_video_production_package.zip"
 if(Test-Path $zip){Remove-Item $zip -Force}
