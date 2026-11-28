@@ -247,7 +247,7 @@ class CompiledRendererTests(unittest.TestCase):
             path = Path(directory) / "storyboard.json"
             path.write_text(json.dumps(storyboard), encoding="utf-8")
             slide_map = {1: {"regions": []}, 2: {"regions": []}}
-            with self.assertRaisesRegex(ValueError, "does not cover every source slide"):
+            with self.assertRaisesRegex(ValueError, "does not cover every rendered source slide"):
                 renderer.load_storyboard(path, slide_map)
 
 
