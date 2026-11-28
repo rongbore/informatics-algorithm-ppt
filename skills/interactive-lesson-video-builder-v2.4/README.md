@@ -31,7 +31,7 @@ Ambiguous focus matches are omitted, not guessed. The source slide and narration
 - Windows with Microsoft PowerPoint installed for source-faithful PPTX slide export.
 - Python 3.10+, FFmpeg and FFprobe on PATH.
 - Install Python dependencies with `python -m pip install -r requirements-v2.4.txt`.
-- Network access for configured Edge neural TTS.
+- Tencent Cloud TTS credentials and an explicitly verified free-tier budget (optional; otherwise use the local sherpa-onnx model), or local sherpa-onnx model files. Edge TTS is an explicit legacy provider only.
 - Sufficient local disk space for per-slide audio, previews and final MP4.
 
 At startup, check these prerequisites. Never claim an output exists unless it was actually generated and validated. If a prerequisite is absent, report the exact blocker and remediation.
@@ -103,7 +103,7 @@ The Skill agent orchestrates the semantic planning and verification steps betwee
 
 ## V3.0 Azure voice and DSU animation extension
 
-- Azure AI Speech is selected by the active Skill via `-TtsProvider azure -AzureVoiceProfile coach_excited`.
+- V3.1 defaults to Tencent Cloud TTS with local sherpa-onnx offline fallback. Azure remains an explicit legacy option.
 - A/B audition profiles use `zh-CN-YunjianNeural`: `sports-commentary-excited` and `sports-commentary`. These are two expression styles of one Azure voice, not two vendors. MP3 auditions require the user's Azure resource key and region.
 - The active runner detects the source-specific 34-slide DSU deck and creates four 1080p/30fps state-driven animation chapters. The state frames are generated from the source problem examples and verified algorithm rules.
 - Azure narration cues are synthesized individually, measured, then bound to their matching state frames. The four chapters are inserted after the relevant exercise sections and the final SRT is rebased with the same insertion durations.
@@ -114,3 +114,34 @@ The Skill agent orchestrates the semantic planning and verification steps betwee
 
 ### Source-deck fidelity correction (V3.0.1)
 The DSU animation narration is grounded in the uploaded 34-slide deck. The food-chain chapter must use slide 25's n=5 result (A={1,2,3,5}, B={4}, A eats B; three statements consistent; false count 0) and slide 26's n=3/two-statement variation (replace first statement with 2 1 4; index 4 is out of range; false count 1). Do not invent example statements such as 1 eats 2 / 2 eats 3 / 3 eats 1. Distinguish the Galaxy queue offset of ship 2 (4, zero-based) from the separate path-compression teaching example 2→3→4 (edge weights 1+1=2). Animation cue IDs must match renderer IDs exactly. Azure timing stores one event-level interval per state frame plus nested phrase-level intervals; subtitles use the measured phrase intervals.
+
+
+## V3.1 Tencent-first / local-offline TTS architecture
+
+The default provider is Tencent Cloud's general `TextToVoice` API, with a fully offline Mandarin sherpa-onnx VITS engine as the fallback. Azure and Edge remain explicit legacy options only; they are not selected by default.
+
+### Zero-unauthorized-charge policy (mandatory)
+- Tencent Cloud synthesis is disabled unless all of the following are explicitly configured: `TENCENT_TTS_ALLOW_FREE_TIER=true`, `TENCENT_TTS_POSTPAID_DISABLED=true`, valid Tencent credentials, and `TENCENT_TTS_FREE_BUDGET_CHARS` greater than zero.
+- The configured character cap must be no greater than the remaining free quota shown in the Tencent console. The operator must verify that postpaid billing is disabled in the Tencent console; the environment acknowledgement is not a substitute for that console check.
+- A persistent local ledger reserves characters before each API request. It is conservative: reservations are not refunded after uncertain network failures. Cached phrases are reused without another API request. No automatic cloud retries are performed.
+- If preflight fails, the configured free-tier cap is reached, or the cloud request fails, the router switches to local sherpa-onnx. It never enables pay-as-you-go, buys a resource pack, or silently switches to another paid provider.
+- If local model files are unavailable, the run stops as INCOMPLETE; no Edge/Azure fallback is attempted.
+- Do not put Tencent SecretId/SecretKey in source control, narration JSON, logs or chat.
+
+### Tencent Cloud provider
+- Use the general `TextToVoice` endpoint only; do not use long-text synthesis or podcast endpoints for the free-tier path.
+- API requests are split to at most 140 characters (below Tencent's documented 150 Chinese-character request limit).
+- Credentials: `TENCENTCLOUD_SECRET_ID`, `TENCENTCLOUD_SECRET_KEY`; optional region/voice controls are in `tts_v31.env.example`.
+- The Tencent SDK is optional and imported only when a guarded cloud request is made. Install `requirements-v3.1-tts.txt` for the cloud and local providers.
+
+### Local offline provider
+- Engine: sherpa-onnx VITS, using the public Mandarin AISHELL-3 multi-speaker model package as one supported model option.
+- Install the model with `scripts/setup_local_tts_v31.ps1`, review the upstream model license, then set `SHERPA_TTS_MODEL`, `SHERPA_TTS_TOKENS`, and optional lexicon/rule paths.
+- Local inference uses CPU and does not send narration to a cloud service. The model must be downloaded before offline synthesis can run.
+
+### Runner
+- `-TtsProvider tencent` is the default. It uses Tencent only when all free-tier guards pass; otherwise it uses local sherpa-onnx.
+- `-TtsProvider local` forces offline generation.
+- `-TtsProvider edge` and `-TtsProvider azure` are retained as explicit legacy selections, not defaults.
+- Course narration and source-grounded DSU animation narration use the same selected V3.1 provider and measured phrase-timing pipeline.
+- Every run reports requested provider, actual providers, fallback events, character reservations, timing and QA. Human listening review remains required; `auto_approved=false`.
