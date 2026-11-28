@@ -122,6 +122,7 @@ class CompiledRendererTests(unittest.TestCase):
         slide_map = {1: {"regions": [{"region_id": "s001_r01"}]}}
         storyboard = {
             "schema_version": "2.6.0",
+            "source_pptx_sha256": "source-hash",
             "slides": [{
                 "slide": 1,
                 "shots": [{
@@ -189,6 +190,7 @@ class CompiledRendererTests(unittest.TestCase):
 
         storyboard = {
             "schema_version": "2.6.0",
+            "source_pptx_sha256": "source-hash",
             "slides": [
                 {"slide": 1, "shots": [{"shot_type": "establishing", "region_ids": []}]},
                 {"slide": 1, "shots": [{"shot_type": "establishing", "region_ids": []}]},
@@ -199,6 +201,53 @@ class CompiledRendererTests(unittest.TestCase):
             path.write_text(json.dumps(storyboard), encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "duplicate slide"):
                 renderer.load_storyboard(path, {1: {"regions": []}})
+
+
+
+    def test_storyboard_rejects_stale_source_fingerprint(self):
+        import json
+        import tempfile
+
+        storyboard = {
+            "schema_version": "2.6.0",
+            "source_pptx_sha256": "different-source",
+            "slides": [{
+                "slide": 1,
+                "shots": [{
+                    "shot_type": "establishing",
+                    "region_ids": [],
+                    "camera_motion": "none",
+                }],
+            }],
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "storyboard.json"
+            path.write_text(json.dumps(storyboard), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "fingerprint"):
+                renderer.load_storyboard(path, {1: {"regions": []}}, "expected-source")
+
+    def test_storyboard_must_cover_every_source_slide(self):
+        import json
+        import tempfile
+
+        storyboard = {
+            "schema_version": "2.6.0",
+            "source_pptx_sha256": "source-hash",
+            "slides": [{
+                "slide": 1,
+                "shots": [{
+                    "shot_type": "establishing",
+                    "region_ids": [],
+                    "camera_motion": "none",
+                }],
+            }],
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "storyboard.json"
+            path.write_text(json.dumps(storyboard), encoding="utf-8")
+            slide_map = {1: {"regions": []}, 2: {"regions": []}}
+            with self.assertRaisesRegex(ValueError, "does not cover every source slide"):
+                renderer.load_storyboard(path, slide_map)
 
 
 
