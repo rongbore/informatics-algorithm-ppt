@@ -55,6 +55,14 @@ The renderer independently probes audio duration before alignment. The standalon
 
 The renderer writes its QA report into the selected QA directory. Use V2.4-specific output paths; never point this command at V2.3 output or cache directories.
 
+## Full-video media QA
+
+After rendering, validate the combined MP4, each source audio file, measured timing JSON, and generated SRT files:
+
+    python scripts/validate_full_video_v2_4.py --video video/v2_4_pilot.mp4 --qa-report qa_v2_4_pilot/qa_report_v2_4_alpha3.json --audio-dir audio_v2_4 --timings-dir audio_v2_4/timings --subtitle-dir subtitles_v2_4_pilot --output qa_v2_4_pilot/final_validation.json
+
+The validator checks the video/audio streams, resolution, total duration, complete media decode, per-slide audio/timing consistency, subtitle cue counts, and thinking-pause suppression. Use --skip-decode only when the full FFmpeg decode is intentionally deferred. A passing machine check is not a substitute for human visual review.
+
 ## Slide 35 duplicate-region finding
 
 The supplied slide35-events.json contains two algorithm records with the same target_text, shape_index, and bbox, but different labels and overlapping ratio intervals. Those records describe one physical formula region. V2.4 consolidates exact duplicate geometry; it does not invent a second bbox for the numeric table. The table's highlight geometry must be extracted from the original PPTX and reviewed before it can be added as a separate region.
