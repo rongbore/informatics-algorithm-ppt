@@ -51,7 +51,7 @@ class ProviderRouter:
                     volume=float(os.getenv("TENCENT_TTS_VOLUME","0")),
                     emotion=os.getenv("TENCENT_TTS_EMOTION","").strip())
                 shutil.copy2(out_wav,cached)
-                self.report["provider_events"].append({"event":"cloud_phrase_synthesized","chars":len(text),"request_id":result.get("request_id"),"budget":result.get("budget")})
+                self.report["provider_events"].append({"event":"cloud_phrase_synthesized","provider":"tencent_cloud","chars":len(text),"request_id":result.get("request_id"),"budget":result.get("budget")})
                 return {"provider":"tencent_cloud","request_id":result.get("request_id")}
             except Exception as exc:
                 # A failed cloud call is never retried and never switched to paid mode.
@@ -61,6 +61,7 @@ class ProviderRouter:
     def _local(self,text,out_wav):
         if self.local is None: self.local=LocalSherpaTTS()
         result=self.local.synthesize_wav(text,out_wav,speed=float(os.getenv("SHERPA_TTS_SPEED","1.0")))
+        self.report["provider_events"].append({"event":"local_phrase_synthesized","provider":"local_sherpa_onnx","chars":len(text)})
         shutil.copy2(out_wav,self.cache/(hashlib.sha256(("local|"+text).encode("utf-8")).hexdigest()+".wav"))
         return result
 
@@ -128,7 +129,7 @@ def main():
             report["failures"].append({"slide":number,"error":str(exc)})
             # stop after first provider/config failure; do not spin cloud requests
             break
-    report["actual_providers"]=sorted({e.get("provider","local_sherpa_onnx") for e in report["provider_events"] if e.get("event")=="cloud_phrase_synthesized"} | ({"local_sherpa_onnx"} if any(e.get("fallback")=="local" for e in report["provider_events"]) or a.provider=="local" else set()))
+    report["actual_providers"]=sorted({e.get("provider") for e in report["provider_events"] if e.get("provider")})
     report["status"]="COMPLETE" if not report["failures"] and len(report["completed"])==len(selected) else "INCOMPLETE"
     (out/"tts_v31_report.json").write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding="utf-8")
     if report["status"]!="COMPLETE": raise SystemExit(2)
