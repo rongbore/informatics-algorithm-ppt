@@ -41,7 +41,7 @@ def subtract_intervals(start,end,intervals):
         for x,y in pieces:
             if b<=x or a>=y: nxt.append((x,y))
             else:
-                if a<x: nxt.append((x,a))
+                if x<a: nxt.append((x,a))
                 if b<y: nxt.append((b,y))
         pieces=nxt
     return [(x,y) for x,y in pieces if y-x>=0.08]
