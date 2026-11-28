@@ -62,9 +62,15 @@ def finalize_plan(context, decisions):
             phrases.append(row)
         final_slides.append({"slide": page, "phrases": phrases})
 
+    decision_payload = {
+        "schema_version": "2.4.1",
+        "context_id": context["context_id"],
+        "slides": final_slides,
+    }
     return {
         "schema_version": "2.4.1",
         "context_id": context["context_id"],
+        "decisions_sha256": canonical_digest(decision_payload),
         "region_manifest_sha256": context["region_manifest_sha256"],
         "narration_sha256": context["narration_sha256"],
         "timing_sha256": context["timing_sha256"],
