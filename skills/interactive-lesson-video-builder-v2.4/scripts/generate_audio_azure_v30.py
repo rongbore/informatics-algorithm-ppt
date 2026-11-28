@@ -30,7 +30,7 @@ def main():
  for slide in data['slides']:
   no=int(slide['slide'])
   if no not in selected:continue
-  pieces=[];speech=[];pauses=[];cursor=0.0;charpos=0
+  pieces=[];speech=[];phrase_rows=[];pauses=[];cursor=0.0;charpos=0
   try:
    for ei,event in enumerate(slide.get('events',[]),1):
     kind=event.get('type','narration');eid=event.get('event_id',f's{no:03d}_e{ei:02d}')
@@ -39,15 +39,19 @@ def main():
      if sec>0:
       q=cache/f'silence_{int(sec*1000)}.wav';silence(ffmpeg,q,sec);d=duration(q);pieces.append(q);pauses.append({'event_id':eid,'kind':'explicit','start':round(cursor,3),'end':round(cursor+d,3)});cursor+=d
      continue
-    phrases=split(event.get('text',''))
-    for pi,text in enumerate(phrases):
-     key=hashlib.sha256((a.profile+'\n'+text).encode()).hexdigest();mp3=cache/(key+'.mp3');wav=cache/(key+'.wav')
-     if not mp3.exists():synthesize(build_ssml(text,a.profile),mp3)
+    original=str(event.get('text','')).strip();phrases=split(original)
+    if not phrases:raise ValueError(f'Empty narration event: {eid}')
+    event_start=cursor;event_phrases=[]
+    for pi,phrase in enumerate(phrases):
+     key=hashlib.sha256((a.profile+'\\n'+phrase).encode()).hexdigest();mp3=cache/(key+'.mp3');wav=cache/(key+'.wav')
+     if not mp3.exists():synthesize(build_ssml(phrase,a.profile),mp3)
      if not wav.exists():run([ffmpeg,'-y','-i',str(mp3),'-ar','24000','-ac','1','-c:a','pcm_s16le',str(wav)])
-     d=duration(wav);speech.append({'event_id':eid,'phrase_index':pi,'type':kind,'text':text,'start':round(cursor,3),'end':round(cursor+d,3),'source_char_start':charpos,'source_char_end':charpos+len(re.sub(r'\s+','',text))});pieces.append(wav);cursor+=d;charpos+=len(re.sub(r'\s+','',text))
+     d=duration(wav);row={'event_id':eid,'phrase_index':pi,'type':kind,'text':phrase,'start':round(cursor,3),'end':round(cursor+d,3),'source_char_start':charpos,'source_char_end':charpos+len(re.sub(r'\\s+','',phrase))}
+     event_phrases.append(row);phrase_rows.append(row);pieces.append(wav);cursor+=d;charpos+=len(re.sub(r'\\s+','',phrase))
      if pi<len(phrases)-1:
-      ms=700 if re.search(r'[？?！!]',text) else 520 if re.search(r'[。；;]',text) else 260
+      ms=700 if re.search(r'[？?！!]',phrase) else 520 if re.search(r'[。；;]',phrase) else 260
       q=cache/f'pause_{ms}.wav';silence(ffmpeg,q,ms/1000);d=duration(q);pieces.append(q);pauses.append({'event_id':eid,'kind':'natural','start':round(cursor,3),'end':round(cursor+d,3)});cursor+=d
+    speech.append({'event_id':eid,'type':kind,'text':original,'start':round(event_start,3),'end':round(cursor,3),'phrases':event_phrases})
     sec=float(event.get('thinking_seconds',0) or 0) if kind=='thinking_prompt' else float(event.get('pause_after_seconds',0) or 0)
     if sec>0:
      q=cache/f'pause_{int(sec*1000)}.wav';silence(ffmpeg,q,sec);d=duration(q);pieces.append(q);pauses.append({'event_id':eid,'kind':'thinking_prompt' if kind=='thinking_prompt' else 'explicit','start':round(cursor,3),'end':round(cursor+d,3)});cursor+=d
@@ -58,7 +62,7 @@ def main():
    lst=cache/f'concat_{no}.txt';lst.write_text(''.join("file '"+str(x.resolve()).replace("'","'\\''")+"'\n" for x in pieces),encoding='utf-8')
    wavout=out/f'slide_{no:03d}.wav';run([ffmpeg,'-y','-f','concat','-safe','0','-i',str(lst),'-c:a','pcm_s16le',str(wavout)])
    mp3out=out/f'slide_{no:03d}.mp3';run([ffmpeg,'-y','-i',str(wavout),'-codec:a','libmp3lame','-q:a','3',str(mp3out)]);wavout.unlink(missing_ok=True)
-   actual=duration(mp3out);timing={'schema_version':'2.4.1','slide':no,'duration_seconds':round(actual,3),'alignment_mode':'measured_phrase_boundaries','speech_events':speech,'pauses':pauses,'tts_provider':'azure_ai_speech','voice_profile':a.profile}
+   actual=duration(mp3out);timing={'schema_version':'2.4.1','slide':no,'duration_seconds':round(actual,3),'alignment_mode':'measured_phrase_boundaries','speech_events':speech,'phrases':phrase_rows,'pauses':pauses,'tts_provider':'azure_ai_speech','voice_profile':a.profile}
    (td/f'slide_{no:03d}.json').write_text(json.dumps(timing,ensure_ascii=False,indent=2),encoding='utf-8');report['completed'].append({'slide':no,'duration_seconds':actual,'phrases':len(speech)})
   except Exception as e:report['failures'].append({'slide':no,'error':str(e)})
  report['status']='COMPLETE' if not report['failures'] else 'INCOMPLETE';(out/'azure_tts_report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
