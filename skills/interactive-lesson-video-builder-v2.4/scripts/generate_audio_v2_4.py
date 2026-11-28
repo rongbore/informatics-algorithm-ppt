@@ -164,7 +164,7 @@ async def main_async(args):
                         await synthesize(phrase, mp3, voice, rate, pitch, volume, args.retries)
                     ensure_wav(ffmpeg, mp3, wav)
                     measured = media_duration(ffprobe, wav)
-                    speech.append({"event_id": event_id, "type": kind, "text": phrase,
+                    speech.append({"event_id": event_id, "phrase_index": phrase_index, "type": kind, "text": phrase,
                                    "start": round(cursor,3), "end": round(cursor+measured,3),
                                    "source_char_start": char_cursor,
                                    "source_char_end": char_cursor+len(compact(phrase)),
