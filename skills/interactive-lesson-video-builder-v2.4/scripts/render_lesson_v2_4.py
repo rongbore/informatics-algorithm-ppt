@@ -184,7 +184,8 @@ def load_storyboard(path, slide_map, expected_source_hash=None, selected_slides=
         if not shots:
             raise ValueError(f"Storyboard slide {page} contains no shots")
         known_regions = {
-            region["region_id"] for region in slide_map[page].get("regions", [])
+            rid for region in slide_map[page].get("regions", [])
+            for rid in [region["region_id"], *region.get("aliases", [])]
         }
         for candidate in shots:
             unknown = set(candidate.get("region_ids", [])) - known_regions
@@ -206,6 +207,7 @@ def load_storyboard(path, slide_map, expected_source_hash=None, selected_slides=
         plans[page] = {
             "shot": shot,
             "shot_count": len(shots),
+            "shots": shots,
             "selected_region_id": next(iter(shot.get("region_ids", [])), None),
         }
     required_slides = set(selected_slides) if selected_slides is not None else set(slide_map)
@@ -286,6 +288,76 @@ def transform_box_for_crop(px, py, pw, ph, crop, width, content_height):
     w = int(round((right - left) * crop["zoom_x"]))
     h = int(round((bottom - top) * crop["zoom_y"]))
     return x, y, max(2, min(width - x, w)), max(2, min(content_height - y, h))
+
+
+
+def compile_camera_timeline(plan, row, width, height, offset_x, offset_y,
+                            scaled_width, scaled_height, duration):
+    """Compile only phrase-owned closeups; all other intervals retain the full slide."""
+    import math
+    shots = (plan or {}).get("shots", [])
+    regions = {r["region_id"]: r for r in row.get("regions", [])}
+    result = []
+    for event in row.get("speech_events", []):
+        start, end = float(event["start"]), min(duration, float(event["end"]))
+        if not (math.isfinite(start) and math.isfinite(end) and 0 <= start < end):
+            continue
+        key = (event["event_id"], event["phrase_index"])
+        active = [r for r in regions.values() if any(
+            (i["event_id"], i["phrase_index"]) == key
+            and abs(float(i["start"]) - start) <= .003
+            and abs(float(i["end"]) - end) <= .003
+            for i in r.get("intervals", []))]
+        if len(active) != 1 or event.get("type") == "thinking_prompt":
+            continue
+        region = active[0]
+        ids = {region["region_id"], *region.get("aliases", [])}
+        candidates = [s for s in shots if event["event_id"] in s.get("narration_event_ids", [])
+                      and len(s.get("region_ids", [])) == 1
+                      and s["region_ids"][0] in ids
+                      and s.get("shot_type") in ("close_up", "extreme_close_up")
+                      and s.get("render_status") == "supported_by_current_renderer"]
+        if len(candidates) != 1 or end - start < 1.5:
+            continue
+        if any(start < float(p["end"]) and end > float(p["start"])
+               for p in row.get("pauses", [])):
+            continue
+        shot = candidates[0]
+        crop = camera_crop({"shot": shot, "selected_region_id": region["region_id"]},
+                           row, width, height, offset_x, offset_y, scaled_width, scaled_height)
+        if not crop or crop["zoom_x"] < 1.05:
+            continue
+        # zoompan uses one isotropic zoom; ensure its actual viewport contains the target.
+        z = min(crop["zoom_x"], crop["zoom_y"])
+        x, y, w, h = map(float, region["bbox"])
+        left, top = offset_x + x * scaled_width, offset_y + y * scaled_height
+        right, bottom = left + w * scaled_width, top + h * scaled_height
+        cx = max(0, min(width - width/z, crop["x"]))
+        cy = max(0, min(height - height/z, crop["y"]))
+        if left < cx+2 or top < cy+2 or right > cx+width/z-2 or bottom > cy+height/z-2:
+            continue
+        result.append({"start": start, "end": end, "event_id": key[0],
+                       "phrase_index": key[1], "region_id": region["region_id"],
+                       "shot_id": shot.get("shot_id"), "zoom": z, "x": cx, "y": cy})
+    result.sort(key=lambda s: s["start"])
+    if any(a["end"] > b["start"] for a,b in zip(result, result[1:])):
+        raise ValueError("Overlapping camera intervals")
+    return result
+
+
+def camera_filter(timeline, width, height, fps):
+    """Use measured phrase boundaries on output frame clock; no audio cuts."""
+    if not timeline:
+        return None
+    expressions = {}
+    for field, default in (("zoom", "1"), ("x", "0"), ("y", "0")):
+        expr = default
+        for shot in reversed(timeline):
+            start, end = shot["start"], shot["end"]
+            expr = f"if(gte(on/{fps},{start:.6f})*lt(on/{fps},{end:.6f}),{shot[field]:.8f},{expr})"
+        expressions[field] = expr
+    return (f"zoompan=z='{expressions['zoom']}':x='{expressions['x']}':"
+            f"y='{expressions['y']}':d=1:s={width}x{height}:fps={fps}")
 
 
 def sha256_file(path):
@@ -411,45 +483,12 @@ def main():
                 f"pad={width}:{content_height}:(ow-iw)/2:(oh-ih)/2:color=black",
             ]
             shot_plan = storyboard.get(page)
-            crop = camera_crop(
-                shot_plan, row, width, content_height,
-                offset_x, offset_y, scaled_width, scaled_height,
-            )
-            if crop:
-                filters.append(
-                    f"crop={crop['width']}:{crop['height']}:{crop['x']}:{crop['y']}"
-                )
-                filters.append(f"scale={width}:{content_height}")
-            motion = (
-                shot_plan["shot"].get("camera_motion", "none")
-                if shot_plan else "none"
-            )
-            has_verified_focus = any(
-                region.get("intervals") for region in row.get("regions", [])
-            )
-            motion_status = "not_requested"
-            if motion in ("slow_push_in", "slow_pan") and crop is None:
-                if has_verified_focus:
-                    motion_status = "suppressed_to_preserve_focus_alignment"
-                else:
-                    if motion == "slow_push_in":
-                        expression = f"min(1+0.025*on/({duration:.3f}*{fps}),1.025)"
-                        x_expression = "iw/2-(iw/zoom/2)"
-                    else:
-                        expression = "1.04"
-                        x_expression = (
-                            f"(iw-iw/zoom)*min(on/({duration:.3f}*{fps}),1)"
-                        )
-                    filters.append(
-                        f"zoompan=z='{expression}':x='{x_expression}':"
-                        f"y='ih/2-(ih/zoom/2)':d=1:s={width}x{content_height}:fps={fps}"
-                    )
-                    motion_status = "rendered"
-            elif motion in ("slow_push_in", "slow_pan") and crop is not None:
-                motion_status = "static_closeup_used_instead"
-            filters.append(
-                f"pad={width}:{height}:0:0:color={config['layout']['subtitle_band_color']}"
-            )
+            crop = None
+            camera_timeline = compile_camera_timeline(
+                shot_plan, row, width, content_height, offset_x, offset_y,
+                scaled_width, scaled_height, duration)
+            motion = "none"
+            motion_status = "phrase_bound_cuts" if camera_timeline else "full_slide"
             focus = config["focus"]
             colors = {
                 "knowledge": focus["knowledge_color"],
@@ -503,6 +542,12 @@ def main():
                         "merged_into_region_index": region_index,
                     })
 
+            camera = camera_filter(camera_timeline, width, content_height, fps)
+            if camera:
+                filters.append(camera)
+            filters.append(
+                f"pad={width}:{height}:0:0:color={config['layout']['subtitle_band_color']}"
+            )
             thinking = thinking_intervals(timing)
             countdown = config["countdown"]
             font = Path(args.font_file)
@@ -538,7 +583,7 @@ def main():
 
             clip = temporary / f"slide_{page:03d}.mp4"
             run([
-                ffmpeg, "-y", "-loop", "1", "-i", str(image), "-i", str(audio),
+                ffmpeg, "-y", "-loop", "1", "-framerate", str(fps), "-i", str(image), "-i", str(audio),
                 "-t", f"{duration:.3f}", "-vf", ",".join(filters), "-r", str(fps),
                 "-c:v", "libx264", "-preset", "medium", "-crf", "20",
                 "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k",
@@ -561,6 +606,7 @@ def main():
                     "offset_x": round(offset_x, 3),
                     "offset_y": round(offset_y, 3),
                     "camera_crop": crop,
+                    "camera_timeline": camera_timeline,
                 },
                 "storyboard": {
                     "shot_type": shot_plan["shot"].get("shot_type") if shot_plan else "establishing",
@@ -607,10 +653,10 @@ def main():
         "auto_approved": False,
         "manual_review_required": True,
         "slides": rendered_rows,
-        "storyboard_rendering": "first shot per slide; verified static close-up crops; optional slow push-in/pan when no verified focus overlays are active; short dissolve implemented as fade-to-black",
+        "storyboard_rendering": "phrase-bound verified closeups; full-slide fallback; short dissolve implemented as fade-to-black",
         "limitations": [
-            "Additional storyboard shots on the same slide are recorded but not yet rendered as separate time-sliced shots.",
-            "Dynamic camera motion is suppressed on slides with active verified focus overlays to preserve overlay geometry.",
+            "Only independently mapped single-region speech phrases are eligible for closeups.",
+            "Continuous camera motion is disabled in phrase-bound mode; focus is drawn before camera transforms.",
             "The semantic association is AI-proposed and second-pass verified; deterministic validation checks source identity, evidence, geometry, and time.",
             "Phrase-level alignment is not word-level or phoneme-level forced alignment.",
             "Frame-level visual quality and instructional correctness still require human review.",
