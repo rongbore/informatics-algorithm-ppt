@@ -37,4 +37,4 @@ Return JSON only:
   }]
 }
 
-Only use confirmed when the second pass agrees on both the region identity and all four bbox coordinates within 0.01 normalized units. Otherwise use needs_review.
+Only use confirmed when the second pass agrees on both the region identity and all four bbox coordinates within 0.01 normalized units. The planner_pass and reviewer_pass values must be distinct. Otherwise use needs_review.
