@@ -82,7 +82,7 @@ The Prepare phase exports every slide with PowerPoint, extracts native regions, 
 
 The Render phase compiles the alignment, renders and validates a content-aware internal pilot, renders the full deck, validates the final MP4, merges SRT captions, exports `narration_script.txt` and `measured_timeline.csv`, and creates `lesson_video_production_package.zip`. Any terminating failure writes a delivery manifest with `status=INCOMPLETE`; the runner must never present a partial file as a completed course. The two phases are invisible implementation details; the user is not asked to perform them.
 
-**Important:** The current renderer outputs the original slide with verified focus overlays, subtitles and numeric thinking countdowns. Camera moves described in the storyboard are not automatically present in the MP4 unless a future renderer implements them. Dynamic algorithm simulations require a validated state trace. Never promise unsupported effects.
+**Storyboard rendering in V2.7:** the renderer consumes the storyboard JSON. It can produce a verified static close-up/extreme-close-up crop around an exact region ID, subtle slow push-in/pan on slides without active focus overlays, subtitles/countdowns, and a short fade-to-black for `short_dissolve`. The first shot is the rendered primary shot for each slide; additional shots remain storyboard-only until event-timed multi-shot rendering is implemented. Dynamic algorithm simulations still require a validated state trace. Never promise unsupported effects.
 
 ## Engine commands and implementation
 
