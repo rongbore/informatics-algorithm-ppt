@@ -43,11 +43,11 @@ def main():
     if not phrases:raise ValueError(f'Empty narration event: {eid}')
     event_start=cursor;event_phrases=[]
     for pi,phrase in enumerate(phrases):
-     key=hashlib.sha256((a.profile+'\\n'+phrase).encode()).hexdigest();mp3=cache/(key+'.mp3');wav=cache/(key+'.wav')
+     key=hashlib.sha256((a.profile+'\n'+phrase).encode()).hexdigest();mp3=cache/(key+'.mp3');wav=cache/(key+'.wav')
      if not mp3.exists():synthesize(build_ssml(phrase,a.profile),mp3)
      if not wav.exists():run([ffmpeg,'-y','-i',str(mp3),'-ar','24000','-ac','1','-c:a','pcm_s16le',str(wav)])
-     d=duration(wav);row={'event_id':eid,'phrase_index':pi,'type':kind,'text':phrase,'start':round(cursor,3),'end':round(cursor+d,3),'source_char_start':charpos,'source_char_end':charpos+len(re.sub(r'\\s+','',phrase))}
-     event_phrases.append(row);phrase_rows.append(row);pieces.append(wav);cursor+=d;charpos+=len(re.sub(r'\\s+','',phrase))
+     d=duration(wav);row={'event_id':eid,'phrase_index':pi,'type':kind,'text':phrase,'start':round(cursor,3),'end':round(cursor+d,3),'source_char_start':charpos,'source_char_end':charpos+len(re.sub(r'\s+','',phrase))}
+     event_phrases.append(row);phrase_rows.append(row);pieces.append(wav);cursor+=d;charpos+=len(re.sub(r'\s+','',phrase))
      if pi<len(phrases)-1:
       ms=700 if re.search(r'[？?！!]',phrase) else 520 if re.search(r'[。；;]',phrase) else 260
       q=cache/f'pause_{ms}.wav';silence(ffmpeg,q,ms/1000);d=duration(q);pieces.append(q);pauses.append({'event_id':eid,'kind':'natural','start':round(cursor,3),'end':round(cursor+d,3)});cursor+=d
