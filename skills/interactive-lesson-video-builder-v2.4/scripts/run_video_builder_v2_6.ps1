@@ -48,7 +48,7 @@ if($Phase -eq "Prepare"){
  Copy-Item (Resolve-Path $NarrationJson).Path $Narration -Force
  Run "powershell.exe" @("-NoProfile","-ExecutionPolicy","Bypass","-File",(Join-Path $Scripts "render_slides_v2_4.ps1"),"-Pptx",$PptxPath,"-OutputDir",$Slides) "Export PowerPoint slides"
  Run $python @((Join-Path $Scripts "extract_slide_regions_v2_4.py"),"--pptx",$PptxPath,"--slides-dir",$Slides,"--output",$Regions) "Extract slide regions"
- Run $python @((Join-Path $Scripts "generate_audio_v2_4.py"),"--input",$Narration,"--output",$Audio,"--timings-output",$Timings,"--config",$Config,"--all-slides) "Generate neural TTS and measured timings"
+ Run $python @((Join-Path $Scripts "generate_audio_v2_4.py"),"--input",$Narration,"--output",$Audio,"--timings-output",$Timings,"--config",$Config,"--all-slides") "Generate neural TTS and measured timings"
  Run $python @((Join-Path $Scripts "prepare_alignment_inputs_v2_4.py"),"--regions",$Regions,"--narration",$Narration,"--timings-dir",$Timings,"--audio-dir",$Audio,"--output",$Context) "Prepare machine-hashed alignment context"
  Write-Host "PREPARE COMPLETE. Skill agent must now create verified alignment decisions and storyboard JSON from the context and slide previews." -ForegroundColor Green
  Write-Host ("Context: "+$Context)
