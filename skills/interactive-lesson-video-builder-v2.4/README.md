@@ -22,7 +22,7 @@ This is the isolated V2.4 development package. It does not replace the V2.3 Skil
 
 Install TTS dependency:
 
-    python -m pip install edge-tts
+    python -m pip install -r requirements-v2.4.txt
 
 ## Run tests
 
@@ -54,6 +54,14 @@ The renderer independently probes audio duration before alignment. The standalon
     python scripts/render_lesson_v2_4_alpha3.py --slides PATH_TO_SLIDE_IMAGES --audio audio_v2_4 --speech-timings audio_v2_4/timings --timeline PATH_TO_TIMELINE --narration PATH_TO_NARRATION --anchor-plan PATH_TO_ANCHOR_PLAN --output video/v2_4_pilot.mp4 --qa qa_v2_4_pilot --ux-config config/video_ux_v2_4.json --subtitle-dir subtitles_v2_4_pilot --only-slides 1 20 40 60 80
 
 The renderer writes its QA report into the selected QA directory. Use V2.4-specific output paths; never point this command at V2.3 output or cache directories.
+
+## Full-video media QA
+
+After rendering, validate the combined MP4, each source audio file, measured timing JSON, and generated SRT files:
+
+    python scripts/validate_full_video_v2_4.py --video video/v2_4_pilot.mp4 --qa-report qa_v2_4_pilot/qa_report_v2_4_alpha3.json --audio-dir audio_v2_4 --timings-dir audio_v2_4/timings --subtitle-dir subtitles_v2_4_pilot --output qa_v2_4_pilot/final_validation.json
+
+The validator checks the video/audio streams, resolution, total duration, complete media decode, per-slide audio/timing consistency, subtitle cue counts, and thinking-pause suppression. Use --skip-decode only when the full FFmpeg decode is intentionally deferred. A passing machine check is not a substitute for human visual review.
 
 ## Slide 35 duplicate-region finding
 
