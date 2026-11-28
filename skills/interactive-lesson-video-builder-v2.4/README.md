@@ -110,3 +110,7 @@ The Skill agent orchestrates the semantic planning and verification steps betwee
 - Required environment variables: `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION`; optional `AZURE_SPEECH_ENDPOINT`. Never commit real credentials.
 - If Azure credentials are missing, the run is incomplete; do not fall back silently to Edge TTS or local synthetic speech.
 - Current animation transitions are discrete state changes, not continuous object morphing. All releases retain `manual_review_required=true` and `auto_approved=false`.
+
+
+### Source-deck fidelity correction (V3.0.1)
+The DSU animation narration is grounded in the uploaded 34-slide deck. The food-chain chapter must use slide 25's n=5 result (A={1,2,3,5}, B={4}, A eats B; three statements consistent; false count 0) and slide 26's n=3/two-statement variation (replace first statement with 2 1 4; index 4 is out of range; false count 1). Do not invent example statements such as 1 eats 2 / 2 eats 3 / 3 eats 1. Distinguish the Galaxy queue offset of ship 2 (4, zero-based) from the separate path-compression teaching example 2→3→4 (edge weights 1+1=2). Animation cue IDs must match renderer IDs exactly. Azure timing stores one event-level interval per state frame plus nested phrase-level intervals; subtitles use the measured phrase intervals.
