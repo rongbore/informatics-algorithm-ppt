@@ -105,38 +105,55 @@ def fencing(out,source):
   frames.append(im)
  return save_frames(frames,out,{'exercise':'fencing','animation_id':'fencing','source_slides':[16,17,18,19,20,21],'narration_event_ids':[f'dsu_fence_{i:02d}' for i in range(7)],'source_sha256':source,'event_count':len(events),'verified_groups':[[1,2,3,4],[5,6,7]],'perimeters':[40,10],'answer':10})
 def food_chain(out,source):
- n=3;p=list(range(10));false=0;events=[]
- def find(x):
-  if p[x]!=x:p[x]=find(p[x])
-  return p[x]
- def same(a,b):return find(a)==find(b)
- def unite(a,b):
-  a,b=find(a),find(b)
-  if a!=b:p[a]=b
- events.append(('初始化三类槽位',p[1:].copy(),True,'每只动物拆成本类、猎物类、天敌类'))
- statements=[(2,1,2,'1 吃 2'),(2,2,3,'2 吃 3'),(2,3,1,'3 吃 1'),(2,2,1,'2 吃 1'),(1,1,3,'1 与 3 同类'),(1,4,2,'4 与 2 同类（越界）')]
- for op,x,y,label in statements:
-  ok=True;why=''
-  if not(1<=x<=n and 1<=y<=n):ok=False;why='编号越界'
-  elif op==2 and x==y:ok=False;why='自己不能吃自己'
-  elif op==1 and (same(x,y+n) or same(x,y+2*n)):ok=False;why='与已知捕食关系冲突'
-  elif op==2 and (same(x,y) or same(x,y+n)):ok=False;why='与已有同类或反向捕食关系冲突'
-  if not ok:false+=1
-  elif op==1:unite(x,y);unite(x+n,y+n);unite(x+2*n,y+2*n);why='三组同类关系合并'
-  else:unite(x+n,y);unite(x,y+2*n);unite(x+2*n,y+n);why='按捕食方向建立三组关系'
-  events.append((label,p[1:].copy(),ok,why))
- assert false==3
+ events=[
+  ("初始化：每只动物拆成 S、P、E 三类槽位","每只动物维护本类 S、猎物类 P、天敌类 E 三个关系槽位",0),
+  ("D=1：同类关系的三组对应合并","S(x)=S(y)；P(x)=P(y)；E(x)=E(y)",1),
+  ("D=2：x 吃 y 的三组对应关系","P(x)=S(y)；S(x)=E(y)；E(x)=P(y)",2),
+  ("接受前检查已有关系","同类冲突：S(x) 与 P(y) 或 E(y)；捕食冲突：S(x) 与 S(y) 或 P(y)",3),
+  ("课件原样例 1：n=5，检查三句话","A 类 {1,2,3,5}；B 类 {4}；A 吃 B；三句话同时成立，假话数 0",4),
+  ("课件原样例 2：n=3，检查两句话","课件变式第一句改为 2 1 4，编号 4 越界；按课件复算，假话数 1",5),
+  ("能由已有关系推出的话也要接受","只要不与已接受约束冲突，就接受；不能把可推出的真话重复计假",6)
+ ]
  frames=[]
- for i,(label,pa,ok,why) in enumerate(events,1):
-  im,d=canvas('练习三｜食物链：三类关系与冲突检测',label,i,len(events),f'{why}｜累计假话：{false if i==len(events) else sum(1 for e in events[1:i] if not e[2])}')
+ for i,(label,detail,mode) in enumerate(events,1):
+  im,d=canvas('练习三｜食物链：三类关系与冲突检测',label,i,len(events),detail)
   d.rounded_rectangle((70,220,1850,830),24,fill=WHITE,outline=(220,230,239),width=2)
-  for col,title in enumerate(['本类 S(x)','猎物类 P(x)','天敌类 E(x)']):
-   xx=300+col*540;d.text((xx,270),title,font=F(32,True),fill=NAVY,anchor='mm')
+  titles=['本类 S(x)','猎物类 P(x)','天敌类 E(x)']
+  for col,title in enumerate(titles):
+   xx=350+col*610;d.text((xx,300),title,font=F(34,True),fill=NAVY,anchor='mm')
    for animal in range(1,4):
-    idx=animal+col*3;d.rounded_rectangle((xx-120,350+(animal-1)*125,xx+120,425+(animal-1)*125),14,fill=GOLD if i>1 and animal in [statements[i-2][1],statements[i-2][2]] and ok else PALE,outline=BLUE,width=3)
-    d.text((xx,387+(animal-1)*125),f'动物 {animal} → 根 {pa[idx-1]}',font=F(24,True),fill=INK,anchor='mm')
-  d.text((960,785),why,font=F(25,True),fill=GREEN if ok else (198,69,69),anchor='mm');frames.append(im)
- return save_frames(frames,out,{'exercise':'food_chain','animation_id':'food_chain','source_slides':[22,23,24,25,26,27],'narration_event_ids':[f'dsu_food_{i:02d}' for i in range(7)],'source_sha256':source,'event_count':len(events),'accepted':3,'rejected':3,'representation':'3n S/P/E slots'})
+    yy=420+(animal-1)*115
+    d.rounded_rectangle((xx-100,yy-36,xx+100,yy+36),14,fill=GOLD if mode in (1,2) else PALE,outline=BLUE,width=3)
+    d.text((xx,yy),f'{title[0]}({animal})',font=F(25,True),fill=INK,anchor='mm')
+  if mode==1:
+   for y in [420,535,650]:
+    for col in range(3):
+     xx=350+col*610;d.line((xx+105,y,xx+505,y),fill=GREEN,width=5)
+   d.text((960,770),'同类：三类槽位分别对应相等',font=F(29,True),fill=GREEN,anchor='mm')
+  elif mode==2:
+   pairs=[((350,535),(960,420)),((350,420),(1570,650)),((350,650),(960,535))]
+   for (x1,y1),(x2,y2) in pairs:d.line((x1+105,y1,x2-105,y2),fill=GREEN,width=6)
+   d.text((960,770),'捕食方向：P(x)→S(y)，S(x)→E(y)，E(x)→P(y)',font=F(26,True),fill=GREEN,anchor='mm')
+  elif mode==3:
+   d.rounded_rectangle((300,390,1620,680),18,fill=(255,246,230),outline=GOLD,width=3)
+   d.text((960,470),'先检查矛盾，再执行合并',font=F(40,True),fill=INK,anchor='mm')
+   d.text((960,560),'每句话最多计假一次',font=F(34,True),fill=(198,69,69),anchor='mm')
+  elif mode==4:
+   d.rounded_rectangle((250,390,1670,680),18,fill=PALE,outline=BLUE,width=3)
+   d.text((960,455),'A 类：{1, 2, 3, 5}',font=F(42,True),fill=BLUE,anchor='mm')
+   d.text((960,535),'B 类：{4}',font=F(42,True),fill=GREEN,anchor='mm')
+   d.text((960,615),'A 吃 B    |    三句话成立    |    假话数 = 0',font=F(32,True),fill=INK,anchor='mm')
+  elif mode==5:
+   d.rounded_rectangle((250,390,1670,680),18,fill=(255,246,230),outline=GOLD,width=3)
+   d.text((960,465),'n = 3    |    两句话',font=F(38,True),fill=INK,anchor='mm')
+   d.text((960,550),'变式：2  1  4    →    编号 4 越界',font=F(34,True),fill=(198,69,69),anchor='mm')
+   d.text((960,625),'按课件复算：假话数 = 1',font=F(32,True),fill=INK,anchor='mm')
+  elif mode==6:
+   d.rounded_rectangle((250,390,1670,680),18,fill=(232,245,236),outline=GREEN,width=3)
+   d.text((960,485),'能推出 ≠ 矛盾',font=F(46,True),fill=GREEN,anchor='mm')
+   d.text((960,575),'可由已有关系推出的真话，仍然接受',font=F(32,True),fill=INK,anchor='mm')
+  frames.append(im)
+ return save_frames(frames,out,{'exercise':'food_chain','animation_id':'food_chain','source_slides':[22,23,24,25,26,27],'narration_event_ids':[f'dsu_food_{i:02d}' for i in range(7)],'source_sha256':source,'event_count':len(events),'source_grounded_examples':{'sample_1':{'n':5,'class_A':[1,2,3,5],'class_B':[4],'relation':'A eats B','false_count':0},'sample_2':{'n':3,'statement_count':2,'variant_first_statement':[2,1,4],'invalid_reason':'index 4 out of range','false_count':1}},'representation':'3n slots S/P/E'})
 def galaxy(out,source):
  p=list(range(9));off=[0]*9;sz=[1]*9;p[2]=1;off[2]=1;sz[1]=2;p[7]=6;off[7]=1;p[8]=6;off[8]=2;sz[6]=3
  p[1]=6;off[1]=sz[6];sz[6]+=sz[1];sz[1]=0

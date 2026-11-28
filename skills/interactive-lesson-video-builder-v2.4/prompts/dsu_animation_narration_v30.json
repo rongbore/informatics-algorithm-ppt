@@ -1,5 +1,5 @@
 {
-  "schema_version": "3.0.0",
+  "schema_version": "3.0.1",
   "source_pptx": "并查集_四道随堂练习_34页课堂课件.pptx",
   "animations": [
     {
@@ -9,37 +9,37 @@
         {
           "event_id": "dsu_relatives_00",
           "type": "narration",
-          "text": "先看初始状态，六个人各自是一个独立集合。"
+          "text": "六个人最初各自成组。关系登记只会合并集合，不会拆分集合。"
         },
         {
           "event_id": "dsu_relatives_01",
           "type": "narration",
-          "text": "第一条关系，一和二合并，集合数量从六变成五。"
+          "text": "第一条关系，把一号和二号所在的集合合并，集合数从六变成五。"
         },
         {
           "event_id": "dsu_relatives_02",
           "type": "narration",
-          "text": "第二条关系，一和五合并，集合数量继续减少到四。"
+          "text": "第二条关系，把一号和五号所在的集合合并，集合数变成四。"
         },
         {
           "event_id": "dsu_relatives_03",
           "type": "narration",
-          "text": "第三条关系，三和四合并，现在还剩三个集合。"
+          "text": "第三条关系，三号和四号合并，当前剩下三个集合。"
         },
         {
           "event_id": "dsu_relatives_04",
           "type": "narration",
-          "text": "第四条关系，五和二早已连通，所以集合数量不变。"
+          "text": "第四条关系，五号和二号已经通过一号连通，这次合并不改变集合数，仍然是三组。"
         },
         {
           "event_id": "dsu_relatives_05",
           "type": "narration",
-          "text": "最后合并一和三，五个人进入同一个集合，只剩两个集合。"
+          "text": "第五条关系，把一号和三号所在的集合合并，最终分成两组：一到五号，以及六号。"
         },
         {
           "event_id": "dsu_relatives_06",
           "type": "narration",
-          "text": "查询时比较两个节点的根，而不是只比较直接父亲。"
+          "text": "关系读完后再回答询问。比较两个节点的根，不能只比较它们的直接父亲。"
         }
       ]
     },
@@ -48,39 +48,39 @@
       "title": "练习二：修建围栏",
       "events": [
         {
-          "event_id": "dsu_fencing_00",
+          "event_id": "dsu_fence_00",
           "type": "narration",
-          "text": "先观察七头奶牛的坐标。坐标接近，不代表它们属于同一个哞网。"
+          "text": "先看原样例七头奶牛的真实坐标。二号和六号距离很近，但它们属于不同哞网。"
         },
         {
-          "event_id": "dsu_fencing_01",
+          "event_id": "dsu_fence_01",
           "type": "narration",
-          "text": "第一条关系，一号和二号进入同一个集合。"
+          "text": "沿第一条关系，把一号和二号所在的集合合并。"
         },
         {
-          "event_id": "dsu_fencing_02",
+          "event_id": "dsu_fence_02",
           "type": "narration",
-          "text": "第二条关系，二号和三号连通，三头牛属于同一组。"
+          "text": "继续按题目给出的关系合并，三号和二号连通，第一组逐渐形成。"
         },
         {
-          "event_id": "dsu_fencing_03",
+          "event_id": "dsu_fence_03",
           "type": "narration",
-          "text": "第三条关系，三号和四号合并，第一组现在有四头牛。"
+          "text": "第三号与第四号连通后，第一组最终包含一、二、三、四号。"
         },
         {
-          "event_id": "dsu_fencing_04",
+          "event_id": "dsu_fence_04",
           "type": "narration",
-          "text": "第四条关系，五号和六号组成第二个集合。"
+          "text": "另一组由五、六、七号组成。关系决定分组，不能按坐标距离分组。"
         },
         {
-          "event_id": "dsu_fencing_05",
+          "event_id": "dsu_fence_05",
           "type": "narration",
-          "text": "第五条关系，七号并入第二组，最终分组是四头牛和三头牛。"
+          "text": "五条关系全部处理完，最终两组是 A 等于一二三四，B 等于五六七。"
         },
         {
-          "event_id": "dsu_fencing_06",
+          "event_id": "dsu_fence_06",
           "type": "narration",
-          "text": "第一组周长四十，第二组宽二高三，周长十，因此最小答案是十。"
+          "text": "分别计算每组的最小外接矩形周长，得到四十和十，取较小值，答案是十。"
         }
       ]
     },
@@ -89,39 +89,39 @@
       "title": "练习三：食物链",
       "events": [
         {
-          "event_id": "dsu_food_chain_00",
+          "event_id": "dsu_food_00",
           "type": "narration",
-          "text": "每只动物拆成本类、猎物类和天敌类三个槽位，三列分别维护关系。"
+          "text": "每只动物拆成三个关系槽位：本类 S、猎物类 P、天敌类 E。三列一起维护关系。"
         },
         {
-          "event_id": "dsu_food_chain_01",
+          "event_id": "dsu_food_01",
           "type": "narration",
-          "text": "第一句，一吃二，建立三组对应关系，这句话可以接受。"
+          "text": "如果 D 等于一，表示两只动物同类，需要合并本类、本类，猎物类、猎物类，以及天敌类、天敌类这三对。"
         },
         {
-          "event_id": "dsu_food_chain_02",
+          "event_id": "dsu_food_02",
           "type": "narration",
-          "text": "第二句，二吃三，与已有关系不冲突，可以接受。"
+          "text": "如果 D 等于二，表示 x 吃 y，需要建立 P(x) 等于 S(y)，S(x) 等于 E(y)，E(x) 等于 P(y) 这三条关系。"
         },
         {
-          "event_id": "dsu_food_chain_03",
+          "event_id": "dsu_food_03",
           "type": "narration",
-          "text": "第三句，三吃一符合三类循环关系，虽然能推出，仍然是正确的话。"
+          "text": "接受一句话之前，先检查它是否与已经接受的关系冲突。每句话最多计为一次假话。"
         },
         {
-          "event_id": "dsu_food_chain_04",
+          "event_id": "dsu_food_04",
           "type": "narration",
-          "text": "第四句，二吃一与已知方向冲突，计为假话。"
+          "text": "回到课件第一组样例：n 等于五，检查三句话。最终 A 类是 1、2、3、5，B 类是 4，A 吃 B。三句话可以同时成立，假话数为零。"
         },
         {
-          "event_id": "dsu_food_chain_05",
+          "event_id": "dsu_food_05",
           "type": "narration",
-          "text": "第五句，一和三同类，与已有捕食关系冲突，再计一次假话。"
+          "text": "再看课件第二组样例：n 等于三，检查两句话。变式把第一句改成 2、1、4，编号四越界；课件复算结论是假话数为一。"
         },
         {
-          "event_id": "dsu_food_chain_06",
+          "event_id": "dsu_food_06",
           "type": "narration",
-          "text": "第六句出现编号越界，拒绝。六句话中有三句为假。"
+          "text": "最后记住：即使一句话能由已有关系推出，只要它没有矛盾，也应该接受，不能重复计为假话。"
         }
       ]
     },
@@ -132,27 +132,27 @@
         {
           "event_id": "dsu_galaxy_00",
           "type": "narration",
-          "text": "当前有两支队伍，移来的队伍是一和二，接收队伍是六、七、八。"
+          "text": "先看两支队伍：接收队伍是六、七、八，移来的队伍是一、二。每支队伍都保持原来的顺序。"
         },
         {
           "event_id": "dsu_galaxy_01",
           "type": "narration",
-          "text": "执行移动命令，把整队一、二接到六、七、八后面。"
+          "text": "执行 M 2 7，把二号所在整队接到七号所在队伍的队尾，接收队伍排在前面。"
         },
         {
           "event_id": "dsu_galaxy_02",
           "type": "narration",
-          "text": "接收队伍原来有三艘船，所以新队首到船一的偏移是三，船二的偏移是四。"
+          "text": "合并后队列是六、七、八、一、二，位置从零开始。船一的位置是三，船二的位置是四。"
         },
         {
           "event_id": "dsu_galaxy_03",
           "type": "narration",
-          "text": "再看路径压缩例子，船二到船三、船三到船四，两条边权都是一。"
+          "text": "课件再单独展示路径压缩：旧父链是二指向三、三指向四，两条边的偏移都是一。"
         },
         {
           "event_id": "dsu_galaxy_04",
           "type": "narration",
-          "text": "压缩后船二直接指向船四，边权变成二，真实队列位置保持不变。"
+          "text": "压缩后，二直接指向四，新边权为二。改变父指针不能改变船的实际位置。"
         }
       ]
     }
